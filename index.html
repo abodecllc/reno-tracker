@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reno Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F7F5F0;
+  --surface: #FFFFFF;
+  --surface2: #F0EDE7;
+  --border: #E0DCD4;
+  --border2: #C8C3BA;
+  --text: #1A1814;
+  --text2: #6B6660;
+  --text3: #9E9A95;
+  --accent: #2D5A3D;
+  --accent-light: #E8F2EC;
+  --accent-text: #1A3D28;
+  --amber: #C4820A;
+  --amber-light: #FEF3DC;
+  --red: #C0392B;
+  --red-light: #FDECEA;
+  --blue: #1B4F8A;
+  --blue-light: #EAF0FA;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+a{color:inherit;text-decoration:none}
+
+/* Setup screen */
+#setup-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem}
+.setup-card{background:var(--surface);border-radius:var(--radius-lg);padding:2.5rem;max-width:480px;width:100%;box-shadow:var(--shadow-md);border:1px solid var(--border)}
+.setup-logo{font-family:'DM Serif Display',serif;font-size:28px;color:var(--text);margin-bottom:4px}
+.setup-logo span{color:var(--accent)}
+.setup-sub{font-size:14px;color:var(--text2);margin-bottom:2rem}
+.setup-step{margin-bottom:1.5rem}
+.setup-step h3{font-size:13px;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px}
+.setup-step p{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px}
+.setup-step a{color:var(--accent);font-weight:500}
+.input-row{display:flex;gap:8px}
+.input-row input{flex:1}
+label{font-size:13px;color:var(--text2);display:block;margin-bottom:5px}
+input,select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:var(--surface);outline:none;transition:border-color 0.15s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:70px;line-height:1.5}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);transition:all 0.15s}
+.btn:hover{background:var(--surface2);border-color:var(--border2)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{background:#245032;border-color:#245032}
+.btn-sm{padding:5px 12px;font-size:13px}
+.btn-danger{color:var(--red);border-color:transparent;background:transparent;padding:5px 8px}
+.btn-danger:hover{background:var(--red-light)}
+.divider{border:none;border-top:1px solid var(--border);margin:1.5rem 0}
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;letter-spacing:0.02em}
+.badge-bathroom{background:#E8F2EC;color:#1A3D28}
+.badge-kitchen{background:#FEF3DC;color:#7A4F08}
+.badge-windows{background:#EAF0FA;color:#1B4F8A}
+.badge-flooring{background:#F5ECF8;color:#5B2D72}
+.badge-other{background:var(--surface2);color:var(--text2)}
+.badge-purchased{background:#E8F2EC;color:#1A3D28}
+.badge-pending{background:var(--surface2);color:var(--text2)}
+
+/* App layout */
+#app{display:none;min-height:100vh}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:100}
+.topbar-left{display:flex;align-items:center;gap:16px}
+.logo{font-family:'DM Serif Display',serif;font-size:22px;color:var(--text)}
+.logo span{color:var(--accent)}
+.sync-indicator{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:5px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3)}
+.sync-dot.ok{background:#3DB865}
+.sync-dot.syncing{background:var(--amber);animation:pulse 1s infinite}
+.sync-dot.err{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+.main{max-width:900px;margin:0 auto;padding:1.5rem}
+
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem}
+@media(max-width:600px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem 1rem;box-shadow:var(--shadow)}
+.stat-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px}
+.stat-value{font-size:22px;font-weight:300;color:var(--text);font-family:'DM Serif Display',serif}
+.stat-card.green .stat-value{color:var(--accent)}
+
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.filter-tabs{display:flex;gap:4px}
+.ftab{font-size:13px;padding:5px 12px;border-radius:20px;border:1px solid transparent;background:transparent;cursor:pointer;color:var(--text2);font-family:'DM Sans',sans-serif;font-weight:500;transition:all 0.15s}
+.ftab.active{background:var(--surface);border-color:var(--border);color:var(--text);box-shadow:var(--shadow)}
+.cat-tabs{display:flex;gap:2px;background:var(--surface2);padding:3px;border-radius:var(--radius);border:1px solid var(--border);margin-bottom:1.25rem;overflow-x:auto}
+.ctab{font-size:13px;padding:5px 14px;border-radius:7px;border:none;background:transparent;cursor:pointer;color:var(--text2);font-family:'DM Sans',sans-serif;font-weight:400;white-space:nowrap;transition:all 0.15s}
+.ctab.active{background:var(--surface);color:var(--text);font-weight:500;box-shadow:var(--shadow)}
+
+/* Add form */
+.add-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;margin-bottom:1.25rem;box-shadow:var(--shadow-md);display:none}
+.add-form.open{display:block}
+.form-title{font-size:15px;font-weight:500;margin-bottom:1rem}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.form-grid.full{grid-template-columns:1fr}
+.form-grid.three{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:560px){.form-grid,.form-grid.three{grid-template-columns:1fr}}
+.form-actions{display:flex;gap:8px;margin-top:12px}
+.url-preview{display:none;align-items:center;gap:10px;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-top:6px}
+.url-preview.show{display:flex}
+.url-preview img{width:36px;height:36px;border-radius:6px;object-fit:cover;border:1px solid var(--border)}
+.url-preview-text{flex:1;min-width:0}
+.url-preview-domain{font-size:13px;font-weight:500;color:var(--text)}
+.url-preview-url{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Items */
+.items-list{display:flex;flex-direction:column;gap:10px}
+.item-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;box-shadow:var(--shadow);transition:border-color 0.2s}
+.item-card:hover{border-color:var(--border2)}
+.item-card.purchased{border-color:#B8D9C4;background:linear-gradient(135deg,#FAFFFE 0%,#F0F8F3 100%)}
+.item-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.item-name{font-size:15px;font-weight:500;color:var(--text)}
+.item-room{font-size:12px;color:var(--text3);margin-top:2px}
+.item-badges{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.item-body{display:flex;gap:14px;align-items:flex-start}
+.item-thumb{width:68px;height:68px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.item-thumb img{width:100%;height:100%;object-fit:contain;padding:4px}
+.item-thumb-placeholder{font-size:10px;color:var(--text3);text-align:center;padding:6px}
+.item-info{flex:1;min-width:0}
+.item-meta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:5px}
+.item-meta-item{font-size:13px;color:var(--text2)}
+.item-meta-item strong{color:var(--text);font-weight:500}
+.item-notes{font-size:13px;color:var(--text3);font-style:italic;margin-bottom:6px;line-height:1.5}
+.item-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.item-link{font-size:13px;color:var(--accent);display:inline-flex;align-items:center;gap:3px}
+.item-link:hover{text-decoration:underline}
+
+.purchase-form{background:var(--accent-light);border:1px solid #B8D9C4;border-radius:var(--radius);padding:10px 12px;margin-top:10px;display:none}
+.purchase-form.open{display:block}
+.purchase-form-title{font-size:12px;font-weight:500;color:var(--accent-text);margin-bottom:8px}
+.purchase-form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+@media(max-width:500px){.purchase-form-grid{grid-template-columns:1fr 1fr}}
+.purchase-form input,.purchase-form select{background:#fff;border-color:#B8D9C4;font-size:13px;padding:7px 10px}
+
+.empty{text-align:center;padding:3.5rem 1rem}
+.empty-icon{font-size:36px;margin-bottom:10px;opacity:0.5}
+.empty-title{font-size:16px;font-weight:500;color:var(--text);margin-bottom:4px}
+.empty-sub{font-size:13px;color:var(--text2)}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:200;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius-lg);padding:2rem;max-width:440px;width:100%;box-shadow:var(--shadow-md)}
+.modal h3{font-size:17px;font-weight:500;margin-bottom:8px}
+.modal p{font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.6}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end}
+
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--text);color:#fff;padding:10px 18px;border-radius:var(--radius);font-size:13px;box-shadow:var(--shadow-md);z-index:300;opacity:0;transform:translateY(8px);transition:all 0.2s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="setup-logo">Reno<span>Track</span></div>
+    <div class="setup-sub">Shared materials tracker for your home renovation</div>
+
+    <div id="setup-new-or-join">
+      <div class="setup-step">
+        <h3>First time setup</h3>
+        <p>This tracker syncs between family members using a free cloud storage bin. You only need to set this up once — then share the key with your family.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-primary" onclick="showCreateFlow()" style="width:100%;justify-content:center">Create a new shared tracker</button>
+        <button class="btn" onclick="showJoinFlow()" style="width:100%;justify-content:center">I have a tracker key to join</button>
+      </div>
+    </div>
+
+    <div id="setup-create" style="display:none">
+      <div class="setup-step">
+        <h3>Step 1 — Get a free API key</h3>
+        <p>Go to <a href="https://jsonbin.io" target="_blank">jsonbin.io</a>, create a free account, then copy your <strong>Master Key</strong> from the API Keys section.</p>
+      </div>
+      <div class="setup-step">
+        <div style="margin-bottom:8px"><label>Your JSONBin Master Key</label><input type="password" id="create-apikey" placeholder="$2a$10$..."></div>
+        <div style="margin-bottom:8px"><label>Your name (so family sees who added items)</label><input type="text" id="create-name" placeholder="e.g. Mom, Dad..."></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="showNewOrJoin()">Back</button>
+        <button class="btn btn-primary" onclick="createTracker()">Create tracker</button>
+      </div>
+      <div id="create-error" style="font-size:13px;color:var(--red);margin-top:8px;display:none"></div>
+    </div>
+
+    <div id="setup-join" style="display:none">
+      <div class="setup-step">
+        <h3>Join existing tracker</h3>
+        <p>Enter the tracker key shared by your family member, your JSONBin Master Key, and your name.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+        <div><label>Tracker key (shared by family)</label><input type="text" id="join-binid" placeholder="Paste key here..."></div>
+        <div><label>Your JSONBin Master Key</label><input type="password" id="join-apikey" placeholder="$2a$10$..."></div>
+        <div><label>Your name</label><input type="text" id="join-name" placeholder="e.g. Mom, Dad..."></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="showNewOrJoin()">Back</button>
+        <button class="btn btn-primary" onclick="joinTracker()">Join tracker</button>
+      </div>
+      <div id="join-error" style="font-size:13px;color:var(--red);margin-top:8px;display:none"></div>
+    </div>
+
+    <div id="setup-share" style="display:none">
+      <div class="setup-step">
+        <h3>Tracker created!</h3>
+        <p>Share the key below with your family. Each person needs their own free JSONBin account and Master Key — they'll use "Join existing tracker" and paste in this key.</p>
+      </div>
+      <div style="margin-bottom:12px">
+        <label>Your tracker key (share this)</label>
+        <div class="input-row">
+          <input type="text" id="share-key" readonly style="background:var(--surface2);font-family:monospace;font-size:13px">
+          <button class="btn" onclick="copyKey()">Copy</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="launchApp()" style="width:100%;justify-content:center">Open tracker</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo">Reno<span>Track</span></div>
+      <div class="sync-indicator"><div class="sync-dot" id="sync-dot"></div><span id="sync-label">Syncing…</span></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="font-size:13px;color:var(--text2)" id="user-label"></span>
+      <button class="btn btn-sm" onclick="showShareModal()">Share key</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Items tracked</div><div class="stat-value" id="st-total">0</div></div>
+      <div class="stat-card"><div class="stat-label">Estimated total</div><div class="stat-value" id="st-est">$0</div></div>
+      <div class="stat-card green"><div class="stat-label">Purchased</div><div class="stat-value" id="st-paid">$0</div></div>
+      <div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-value" id="st-rem">$0</div></div>
+    </div>
+
+    <div class="toolbar">
+      <div class="filter-tabs">
+        <button class="ftab active" onclick="setFilter('all',this)">All</button>
+        <button class="ftab" onclick="setFilter('pending',this)">Pending</button>
+        <button class="ftab" onclick="setFilter('purchased',this)">Purchased</button>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="toggleAddForm()">+ Add material</button>
+    </div>
+
+    <div class="add-form" id="add-form">
+      <div class="form-title" id="form-heading">Add material</div>
+      <div class="form-grid">
+        <div><label>Item name *</label><input id="f-name" type="text" placeholder="e.g. Kohler Artifacts faucet"></div>
+        <div><label>Category *</label><select id="f-cat"><option value="bathroom">Bathroom</option><option value="kitchen">Kitchen</option><option value="windows">Windows</option><option value="flooring">Flooring</option><option value="other">Other</option></select></div>
+      </div>
+      <div class="form-grid">
+        <div><label>Room / location</label><input id="f-room" type="text" placeholder="e.g. Master bath"></div>
+        <div><label>Estimated cost ($)</label><input id="f-cost" type="number" placeholder="0.00" step="0.01"></div>
+      </div>
+      <div class="form-grid full">
+        <div>
+          <label>Product URL</label>
+          <input id="f-url" type="url" placeholder="https://..." oninput="urlChanged(this)">
+          <div class="url-preview" id="url-preview">
+            <img id="url-favicon" src="" alt="" onerror="this.style.opacity=0">
+            <div class="url-preview-text">
+              <div class="url-preview-domain" id="url-domain"></div>
+              <div class="url-preview-url" id="url-short"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-grid full"><div><label>Notes</label><textarea id="f-notes" placeholder="Color, finish, model #, dimensions…"></textarea></div></div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="saveItem()">Save item</button>
+        <button class="btn" onclick="cancelForm()">Cancel</button>
+      </div>
+      <input type="hidden" id="f-id">
+    </div>
+
+    <div class="cat-tabs">
+      <button class="ctab active" onclick="setCat('all',this)">All rooms</button>
+      <button class="ctab" onclick="setCat('bathroom',this)">Bathroom</button>
+      <button class="ctab" onclick="setCat('kitchen',this)">Kitchen</button>
+      <button class="ctab" onclick="setCat('windows',this)">Windows</button>
+      <button class="ctab" onclick="setCat('flooring',this)">Flooring</button>
+      <button class="ctab" onclick="setCat('other',this)">Other</button>
+    </div>
+
+    <div class="items-list" id="items-list"></div>
+  </div>
+</div>
+
+<!-- Share modal -->
+<div class="modal-overlay" id="share-modal">
+  <div class="modal">
+    <h3>Share with family</h3>
+    <p>Each family member needs to download this HTML file, open it in a browser, choose "Join existing tracker," enter their own free JSONBin Master Key, and paste in the tracker key below.</p>
+    <div style="margin-bottom:16px">
+      <label>Tracker key</label>
+      <div class="input-row"><input type="text" id="modal-key" readonly style="background:var(--surface2);font-family:monospace;font-size:13px"><button class="btn" onclick="copyModalKey()">Copy</button></div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-primary" onclick="closeShareModal()">Done</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let config = {apiKey:'', binId:'', userName:''};
+let items = [];
+let currentFilter = 'all';
+let currentCat = 'all';
+let editingId = null;
+let syncTimer = null;
+let lastSyncHash = '';
+
+// --- Setup flows ---
+function showNewOrJoin(){
+  document.getElementById('setup-new-or-join').style.display='';
+  document.getElementById('setup-create').style.display='none';
+  document.getElementById('setup-join').style.display='none';
+  document.getElementById('setup-share').style.display='none';
+}
+function showCreateFlow(){
+  document.getElementById('setup-new-or-join').style.display='none';
+  document.getElementById('setup-create').style.display='';
+}
+function showJoinFlow(){
+  document.getElementById('setup-new-or-join').style.display='none';
+  document.getElementById('setup-join').style.display='';
+}
+
+async function createTracker(){
+  const key = document.getElementById('create-apikey').value.trim();
+  const name = document.getElementById('create-name').value.trim();
+  const err = document.getElementById('create-error');
+  err.style.display='none';
+  if(!key||!name){err.textContent='Please fill in all fields.';err.style.display='';return;}
+  try{
+    const r = await fetch('https://api.jsonbin.io/v3/b',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Private':'true','X-Bin-Name':'RenoTracker'},
+      body:JSON.stringify({items:[],version:1})
+    });
+    if(!r.ok) throw new Error('API error '+r.status);
+    const d = await r.json();
+    const binId = d.metadata.id;
+    config = {apiKey:key,binId,userName:name};
+    localStorage.setItem('renotrack_config', JSON.stringify(config));
+    document.getElementById('share-key').value = binId;
+    document.getElementById('setup-create').style.display='none';
+    document.getElementById('setup-share').style.display='';
+  }catch(e){
+    err.textContent='Could not connect. Check your Master Key and try again.';
+    err.style.display='';
+  }
+}
+
+async function joinTracker(){
+  const binId = document.getElementById('join-binid').value.trim();
+  const key = document.getElementById('join-apikey').value.trim();
+  const name = document.getElementById('join-name').value.trim();
+  const err = document.getElementById('join-error');
+  err.style.display='none';
+  if(!binId||!key||!name){err.textContent='Please fill in all fields.';err.style.display='';return;}
+  try{
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`,{headers:{'X-Master-Key':key}});
+    if(!r.ok) throw new Error('Could not access bin');
+    config = {apiKey:key,binId,userName:name};
+    localStorage.setItem('renotrack_config',JSON.stringify(config));
+    launchApp();
+  }catch(e){
+    err.textContent='Could not connect. Check the tracker key and your Master Key.';
+    err.style.display='';
+  }
+}
+
+function copyKey(){
+  const v = document.getElementById('share-key').value;
+  navigator.clipboard.writeText(v).then(()=>showToast('Tracker key copied!'));
+}
+function copyModalKey(){
+  const v = document.getElementById('modal-key').value;
+  navigator.clipboard.writeText(v).then(()=>showToast('Copied!'));
+}
+
+function launchApp(){
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('app').style.display='';
+  document.getElementById('user-label').textContent = config.userName;
+  document.getElementById('modal-key').value = config.binId;
+  syncStart();
+}
+
+// --- Sync ---
+function setSyncStatus(s){
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  dot.className='sync-dot '+s;
+  if(s==='ok') lbl.textContent='Synced';
+  else if(s==='syncing') lbl.textContent='Syncing…';
+  else lbl.textContent='Offline';
+}
+
+async function fetchItems(){
+  setSyncStatus('syncing');
+  try{
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${config.binId}/latest`,{headers:{'X-Master-Key':config.apiKey}});
+    if(!r.ok) throw new Error();
+    const d = await r.json();
+    const newHash = JSON.stringify(d.record.items);
+    if(newHash !== lastSyncHash){
+      items = d.record.items||[];
+      lastSyncHash = newHash;
+      render();
+      updateStats();
+    }
+    setSyncStatus('ok');
+  }catch(e){setSyncStatus('err');}
+}
+
+async function pushItems(){
+  setSyncStatus('syncing');
+  try{
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${config.binId}`,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key':config.apiKey},
+      body:JSON.stringify({items,version:1})
+    });
+    if(!r.ok) throw new Error();
+    lastSyncHash = JSON.stringify(items);
+    setSyncStatus('ok');
+  }catch(e){setSyncStatus('err');}
+}
+
+function syncStart(){
+  fetchItems();
+  syncTimer = setInterval(fetchItems, 20000);
+}
+
+// --- Helpers ---
+function getDomain(url){try{return new URL(url).hostname.replace('www.','')}catch(e){return url}}
+function getFavicon(url){try{return`https://www.google.com/s2/favicons?domain=${new URL(url).origin}&sz=64`}catch(e){return''}}
+function esc(s){if(!s)return'';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function fmt(n){return'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}
+function fmt2(n){return'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function catLabel(c){return{bathroom:'Bathroom',kitchen:'Kitchen',windows:'Windows',flooring:'Flooring',other:'Other'}[c]||c}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// --- Form ---
+function toggleAddForm(){
+  editingId=null;
+  document.getElementById('f-id').value='';
+  document.getElementById('f-name').value='';
+  document.getElementById('f-cat').value='bathroom';
+  document.getElementById('f-room').value='';
+  document.getElementById('f-cost').value='';
+  document.getElementById('f-url').value='';
+  document.getElementById('f-notes').value='';
+  document.getElementById('url-preview').className='url-preview';
+  document.getElementById('form-heading').textContent='Add material';
+  const form = document.getElementById('add-form');
+  form.classList.toggle('open');
+  if(form.classList.contains('open')) form.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function cancelForm(){
+  editingId=null;
+  document.getElementById('add-form').classList.remove('open');
+}
+function editItem(id){
+  const item = items.find(i=>i.id===id);
+  if(!item) return;
+  editingId=id;
+  document.getElementById('f-id').value=id;
+  document.getElementById('f-name').value=item.name;
+  document.getElementById('f-cat').value=item.category;
+  document.getElementById('f-room').value=item.room||'';
+  document.getElementById('f-cost').value=item.estimatedCost||'';
+  document.getElementById('f-url').value=item.url||'';
+  document.getElementById('f-notes').value=item.notes||'';
+  document.getElementById('form-heading').textContent='Edit item';
+  if(item.url) showUrlPreview(item.url);
+  const form=document.getElementById('add-form');
+  form.classList.add('open');
+  form.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+let urlDebounce;
+function urlChanged(el){
+  clearTimeout(urlDebounce);
+  urlDebounce = setTimeout(()=>showUrlPreview(el.value),500);
+}
+function showUrlPreview(url){
+  if(!url||!url.startsWith('http')){document.getElementById('url-preview').className='url-preview';return;}
+  const fav = getFavicon(url);
+  const dom = getDomain(url);
+  document.getElementById('url-favicon').src=fav;
+  document.getElementById('url-domain').textContent=dom;
+  document.getElementById('url-short').textContent=url.length>55?url.substring(0,55)+'…':url;
+  document.getElementById('url-preview').className='url-preview show';
+}
+
+async function saveItem(){
+  const name = document.getElementById('f-name').value.trim();
+  if(!name){showToast('Please enter a name');return;}
+  const existing = editingId ? items.find(i=>i.id===editingId) : null;
+  const item = {
+    id: editingId||Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    name,
+    category:document.getElementById('f-cat').value,
+    room:document.getElementById('f-room').value.trim(),
+    estimatedCost:parseFloat(document.getElementById('f-cost').value)||0,
+    url:document.getElementById('f-url').value.trim(),
+    notes:document.getElementById('f-notes').value.trim(),
+    addedBy:config.userName,
+    addedAt:existing?existing.addedAt:Date.now(),
+    purchased:existing?existing.purchased:false,
+    purchaseDetails:existing?existing.purchaseDetails:null
+  };
+  if(editingId){
+    const idx=items.findIndex(i=>i.id===editingId);
+    if(idx>-1)items[idx]=item;
+  }else{
+    items.unshift(item);
+  }
+  cancelForm();
+  render();
+  updateStats();
+  await pushItems();
+  showToast(editingId?'Item updated':'Item added');
+}
+
+async function deleteItem(id){
+  if(!confirm('Remove this item?'))return;
+  items=items.filter(i=>i.id!==id);
+  render();updateStats();
+  await pushItems();
+  showToast('Item removed');
+}
+
+function togglePurchaseForm(id){
+  const pf = document.getElementById('pf-'+id);
+  if(pf) pf.classList.toggle('open');
+}
+
+async function markPurchased(id){
+  const item=items.find(i=>i.id===id);
+  if(!item)return;
+  const cost=parseFloat(document.getElementById('pf-cost-'+id).value)||item.estimatedCost||0;
+  const method=document.getElementById('pf-method-'+id).value;
+  const store=document.getElementById('pf-store-'+id).value.trim();
+  item.purchased=true;
+  item.purchaseDetails={actualCost:cost,method,store,date:new Date().toISOString().split('T')[0],by:config.userName};
+  render();updateStats();
+  await pushItems();
+  showToast('Marked as purchased!');
+}
+
+async function unmarkPurchased(id){
+  const item=items.find(i=>i.id===id);
+  if(!item)return;
+  item.purchased=false;item.purchaseDetails=null;
+  render();updateStats();
+  await pushItems();
+  showToast('Purchase undone');
+}
+
+// --- Render ---
+function setFilter(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+function setCat(c,btn){
+  currentCat=c;
+  document.querySelectorAll('.ctab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function getFiltered(){
+  let list=items;
+  if(currentCat!=='all') list=list.filter(i=>i.category===currentCat);
+  if(currentFilter==='pending') list=list.filter(i=>!i.purchased);
+  if(currentFilter==='purchased') list=list.filter(i=>i.purchased);
+  return list;
+}
+
+function render(){
+  const list=getFiltered();
+  const el=document.getElementById('items-list');
+  if(!list.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🏠</div><div class="empty-title">No items here yet</div><div class="empty-sub">Add your first material to get started</div></div>`;
+    return;
+  }
+  el.innerHTML=list.map(item=>{
+    const fav=item.url?getFavicon(item.url):'';
+    const pd=item.purchaseDetails;
+    return`<div class="item-card ${item.purchased?'purchased':''}" id="card-${item.id}">
+      <div class="item-top">
+        <div>
+          <div class="item-name">${esc(item.name)}</div>
+          ${item.room?`<div class="item-room">${esc(item.room)}</div>`:''}
+        </div>
+        <div class="item-badges">
+          <span class="badge badge-${item.category}">${catLabel(item.category)}</span>
+          <span class="badge ${item.purchased?'badge-purchased':'badge-pending'}">${item.purchased?'Purchased':'Considering'}</span>
+          <button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}')" title="Remove" style="padding:3px 7px;font-size:16px;line-height:1">×</button>
+        </div>
+      </div>
+      <div class="item-body">
+        <div class="item-thumb">
+          ${fav?`<img src="${fav}" alt="" onerror="this.parentElement.innerHTML='<span class=item-thumb-placeholder>No preview</span>'">`:'<span class="item-thumb-placeholder">No link</span>'}
+        </div>
+        <div class="item-info">
+          <div class="item-meta">
+            ${item.estimatedCost?`<span class="item-meta-item">Est. <strong>${fmt2(item.estimatedCost)}</strong></span>`:''}
+            ${pd?`<span class="item-meta-item" style="color:var(--accent)">Paid <strong style="color:var(--accent)">${fmt2(pd.actualCost)}</strong></span>`:''}
+            ${pd?`<span class="item-meta-item">${esc(pd.method)}${pd.store?' · '+esc(pd.store):''}</span>`:''}
+            ${pd?`<span class="item-meta-item">${pd.date}${pd.by?' by '+esc(pd.by):''}</span>`:''}
+            ${item.addedBy?`<span class="item-meta-item" style="color:var(--text3)">Added by ${esc(item.addedBy)}</span>`:''}
+          </div>
+          ${item.notes?`<div class="item-notes">${esc(item.notes)}</div>`:''}
+          <div class="item-actions">
+            ${item.url?`<a class="item-link" href="${item.url}" target="_blank">View product ↗</a>`:''}
+            <button class="btn btn-sm" onclick="editItem('${item.id}')">Edit</button>
+            ${!item.purchased
+              ?`<button class="btn btn-sm" onclick="togglePurchaseForm('${item.id}')" style="color:var(--accent);border-color:var(--accent)">Mark purchased</button>`
+              :`<button class="btn btn-sm" onclick="unmarkPurchased('${item.id}')">Undo purchase</button>`
+            }
+          </div>
+          ${!item.purchased?`
+          <div class="purchase-form" id="pf-${item.id}">
+            <div class="purchase-form-title">Confirm purchase details</div>
+            <div class="purchase-form-grid">
+              <div><label style="font-size:11px;color:var(--accent-text)">Actual cost ($)</label><input type="number" id="pf-cost-${item.id}" value="${item.estimatedCost||''}" step="0.01"></div>
+              <div><label style="font-size:11px;color:var(--accent-text)">Payment method</label><select id="pf-method-${item.id}"><option>Credit card</option><option>Debit card</option><option>Cash</option><option>Check</option><option>Financing</option><option>Zelle / Venmo</option></select></div>
+              <div><label style="font-size:11px;color:var(--accent-text)">Store / vendor</label><input type="text" id="pf-store-${item.id}" placeholder="Home Depot…"></div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="markPurchased('${item.id}')">Confirm purchase</button>
+          </div>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateStats(){
+  const total=items.length;
+  const est=items.reduce((s,i)=>s+(i.estimatedCost||0),0);
+  const purch=items.filter(i=>i.purchased);
+  const paid=purch.reduce((s,i)=>s+(i.purchaseDetails?.actualCost||0),0);
+  document.getElementById('st-total').textContent=total;
+  document.getElementById('st-est').textContent=fmt(est);
+  document.getElementById('st-paid').textContent=fmt(paid);
+  document.getElementById('st-rem').textContent=fmt(Math.max(0,est-paid));
+}
+
+function showShareModal(){document.getElementById('share-modal').classList.add('open')}
+function closeShareModal(){document.getElementById('share-modal').classList.remove('open')}
+
+// --- Boot ---
+(function(){
+  const saved = localStorage.getItem('renotrack_config');
+  if(saved){
+    try{
+      config=JSON.parse(saved);
+      if(config.apiKey&&config.binId&&config.userName){launchApp();return;}
+    }catch(e){}
+  }
+  showNewOrJoin();
+})();
+</script>
+</body>
+</html>
