@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RenoTrack</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F7F5F0;color:#1A1814;min-height:100vh;font-size:15px}
+.hidden{display:none!important}
+.screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.card{background:#fff;border-radius:16px;padding:2.5rem;max-width:460px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,0.08);border:1px solid #E0DCD4}
+h1{font-size:26px;font-weight:600;margin-bottom:4px}
+h1 span{color:#2D5A3D}
+.sub{font-size:14px;color:#6B6660;margin-bottom:2rem;line-height:1.5}
+h3{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:#9E9A95;margin-bottom:6px}
+p{font-size:13px;color:#6B6660;line-height:1.6;margin-bottom:10px}
+p a{color:#2D5A3D;font-weight:500}
+label{font-size:13px;color:#6B6660;display:block;margin-bottom:4px;margin-top:10px}
+input,select,textarea{width:100%;padding:9px 12px;border:1px solid #E0DCD4;border-radius:8px;font-size:14px;color:#1A1814;background:#fff;outline:none;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:#2D5A3D}
+textarea{resize:vertical;min-height:65px;line-height:1.5}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:9px 18px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:1px solid #E0DCD4;background:#fff;color:#1A1814;font-family:inherit;transition:all 0.15s}
+.btn:hover{background:#F0EDE7}
+.btn-green{background:#2D5A3D;color:#fff;border-color:#2D5A3D}
+.btn-green:hover{background:#245032}
+.btn-amber{background:#7A4F08;color:#fff;border-color:#7A4F08}
+.btn-amber:hover{background:#633806}
+.btn-sm{padding:5px 11px;font-size:13px}
+.btn-ghost{border-color:transparent;background:transparent;color:#C0392B}
+.btn-ghost:hover{background:#FDECEA}
+.row{display:flex;gap:8px;margin-top:10px}
+.row .btn{flex:1;justify-content:center}
+.err{font-size:13px;color:#C0392B;margin-top:8px;padding:8px 10px;background:#FDECEA;border-radius:6px}
+
+/* App */
+#app-screen{min-height:100vh;background:#F7F5F0}
+.topbar{background:#fff;border-bottom:1px solid #E0DCD4;padding:0 1.5rem;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.logo{font-size:20px;font-weight:700}.logo span{color:#2D5A3D}
+.sync{font-size:12px;color:#9E9A95;display:flex;align-items:center;gap:5px}
+.dot{width:7px;height:7px;border-radius:50%;background:#9E9A95}
+.dot.ok{background:#3DB865}.dot.spin{background:#C4820A;animation:blink 1s infinite}.dot.err{background:#C0392B}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* Top nav tabs */
+.topnav{background:#fff;border-bottom:1px solid #E0DCD4;display:flex;padding:0 1.5rem;gap:0}
+.tnav{font-size:14px;font-weight:500;padding:12px 18px;border-bottom:2px solid transparent;cursor:pointer;color:#6B6660;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;transition:all 0.15s}
+.tnav.on{color:#1A1814;border-bottom-color:#1A1814}
+.tnav.labor-tab.on{color:#7A4F08;border-bottom-color:#7A4F08}
+.summary-bar{background:#1A1814;color:#fff;padding:0}
+.summary-bar-inner{max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);divide-x:1px}
+.sb-item{padding:14px 20px;border-right:1px solid rgba(255,255,255,0.1);position:relative}
+.sb-item:last-child{border-right:none}
+.sb-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:rgba(255,255,255,0.5);margin-bottom:6px}
+.sb-value{font-size:24px;font-weight:300;color:#fff;letter-spacing:-0.5px}
+.sb-breakdown{font-size:12px;color:rgba(255,255,255,0.45);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap}
+.sb-breakdown b{color:rgba(255,255,255,0.75);font-weight:500}
+.sb-bar{height:3px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:10px;overflow:hidden}
+.sb-bar-fill{height:100%;background:#3DB865;border-radius:2px;transition:width 0.4s}
+@media(max-width:580px){.summary-bar-inner{grid-template-columns:1fr 1fr}.sb-item:nth-child(2){border-right:none}.sb-item:last-child{grid-column:span 2;border-top:1px solid rgba(255,255,255,0.1)}}
+
+.main{max-width:900px;margin:0 auto;padding:1.5rem}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem}
+@media(max-width:580px){.stats{grid-template-columns:1fr 1fr}}
+.stat{background:#fff;border:1px solid #E0DCD4;border-radius:10px;padding:0.9rem 1rem}
+.stat-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:#9E9A95;margin-bottom:3px}
+.stat-val{font-size:22px;font-weight:300;color:#1A1814}
+.stat.green .stat-val{color:#2D5A3D}
+.stat.amber .stat-val{color:#7A4F08}
+.stat.red .stat-val{color:#C0392B}
+
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.ftabs{display:flex;gap:3px}
+.ftab{font-size:13px;padding:5px 12px;border-radius:20px;border:1px solid transparent;background:transparent;cursor:pointer;color:#6B6660;font-family:inherit;font-weight:500}
+.ftab.on{background:#fff;border-color:#E0DCD4;color:#1A1814;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.cattabs{display:flex;gap:2px;background:#F0EDE7;padding:3px;border-radius:10px;border:1px solid #E0DCD4;margin-bottom:1.25rem;overflow-x:auto}
+.ctab{font-size:13px;padding:5px 13px;border-radius:7px;border:none;background:transparent;cursor:pointer;color:#6B6660;font-family:inherit;white-space:nowrap}
+.ctab.on{background:#fff;color:#1A1814;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+
+/* Forms */
+.add-form{background:#fff;border:1px solid #E0DCD4;border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.fg.full{grid-template-columns:1fr}
+.fg.three{grid-template-columns:1fr 1fr 1fr}
+.fg.four{grid-template-columns:1fr 1fr 1fr 1fr}
+@media(max-width:580px){.fg,.fg.three,.fg.four{grid-template-columns:1fr 1fr}}
+@media(max-width:400px){.fg,.fg.three,.fg.four{grid-template-columns:1fr}}
+.factions{display:flex;gap:8px;margin-top:12px}
+.prev{display:none;align-items:center;gap:10px;padding:8px 12px;background:#F7F5F0;border:1px solid #E0DCD4;border-radius:8px;margin-top:6px}
+.prev.on{display:flex}
+.prev img{width:34px;height:34px;border-radius:6px;border:1px solid #E0DCD4;object-fit:cover}
+.prev-dom{font-size:13px;font-weight:500}
+.prev-url{font-size:11px;color:#9E9A95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px}
+
+/* Material cards */
+.items{display:flex;flex-direction:column;gap:10px}
+.ic{background:#fff;border:1px solid #E0DCD4;border-radius:16px;padding:1rem 1.25rem;transition:border-color 0.2s}
+.ic:hover{border-color:#C8C3BA}
+.ic.bought{border-color:#A8D4B8;background:linear-gradient(135deg,#FAFFFE,#F0F8F3)}
+.ic-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.ic-name{font-size:15px;font-weight:500}
+.ic-room{font-size:12px;color:#9E9A95;margin-top:2px}
+.badges{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.badge{font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px}
+.b-bathroom{background:#E8F2EC;color:#1A3D28}
+.b-kitchen{background:#FEF3DC;color:#7A4F08}
+.b-windows{background:#EAF0FA;color:#1B4F8A}
+.b-flooring{background:#F5ECF8;color:#5B2D72}
+.b-other{background:#F0EDE7;color:#6B6660}
+.b-bought{background:#E8F2EC;color:#1A3D28}
+.b-pending{background:#F0EDE7;color:#6B6660}
+.ic-body{display:flex;gap:14px;align-items:flex-start}
+.thumb{width:66px;height:66px;border-radius:8px;border:1px solid #E0DCD4;background:#F7F5F0;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.thumb img{width:100%;height:100%;object-fit:contain;padding:4px}
+.thumb-ph{font-size:10px;color:#9E9A95;text-align:center;padding:6px}
+.ic-info{flex:1;min-width:0}
+.ic-meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:5px}
+.ic-meta span{font-size:13px;color:#6B6660}
+.ic-meta strong{color:#1A1814;font-weight:500}
+.ic-notes{font-size:13px;color:#9E9A95;font-style:italic;margin-bottom:6px;line-height:1.5}
+.ic-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.ic-link{font-size:13px;color:#2D5A3D}
+.ic-link:hover{text-decoration:underline}
+.pf{background:#E8F2EC;border:1px solid #A8D4B8;border-radius:8px;padding:10px 12px;margin-top:10px}
+.pf-title{font-size:12px;font-weight:600;color:#1A3D28;margin-bottom:8px}
+.pf .fg input,.pf .fg select{background:#fff;border-color:#A8D4B8;font-size:13px;padding:7px 10px}
+
+/* Labor cards */
+.lc{background:#fff;border:1px solid #E0DCD4;border-radius:16px;padding:1rem 1.25rem;transition:border-color 0.2s}
+.lc:hover{border-color:#C8C3BA}
+.lc.paid{border-color:#D4B483;background:linear-gradient(135deg,#FFFDF8,#FEF9EE)}
+.lc.overdue{border-color:#E8A89A;background:linear-gradient(135deg,#FFFAF9,#FEF0EE)}
+.lc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.lc-payee{font-size:15px;font-weight:500}
+.lc-desc{font-size:12px;color:#9E9A95;margin-top:2px}
+.lc-meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.lc-meta span{font-size:13px;color:#6B6660}
+.lc-meta strong{color:#1A1814;font-weight:500}
+.lc-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.b-paid{background:#FEF3DC;color:#7A4F08}
+.b-expected{background:#F0EDE7;color:#6B6660}
+.b-overdue{background:#FDECEA;color:#8B2020}
+.b-phase{background:#EAF0FA;color:#1B4F8A}
+.lpf{background:#FEF9EE;border:1px solid #D4B483;border-radius:8px;padding:10px 12px;margin-top:10px}
+.lpf-title{font-size:12px;font-weight:600;color:#7A4F08;margin-bottom:8px}
+.lpf .fg input,.lpf .fg select{background:#fff;border-color:#D4B483;font-size:13px;padding:7px 10px}
+
+/* Labor summary table */
+.l-summary{background:#fff;border:1px solid #E0DCD4;border-radius:12px;overflow:hidden;margin-bottom:1.25rem}
+.l-summary-title{font-size:13px;font-weight:600;padding:10px 14px;border-bottom:1px solid #E0DCD4;color:#6B6660;text-transform:uppercase;letter-spacing:0.05em}
+.l-table{width:100%;border-collapse:collapse;font-size:13px}
+.l-table th{text-align:left;padding:8px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#9E9A95;border-bottom:1px solid #F0EDE7}
+.l-table td{padding:9px 14px;border-bottom:1px solid #F0EDE7;color:#1A1814}
+.l-table tr:last-child td{border-bottom:none}
+.l-table .total-row td{font-weight:600;background:#F7F5F0;color:#1A1814}
+
+.empty{text-align:center;padding:3rem 1rem;color:#9E9A95}
+.empty-icon{font-size:32px;margin-bottom:8px;opacity:0.5}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:100;align-items:center;justify-content:center;padding:1rem}
+.modal-bg.on{display:flex}
+.modal{background:#fff;border-radius:16px;padding:2rem;max-width:420px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.12)}
+.modal h3{font-size:16px;font-weight:600;margin-bottom:8px;text-transform:none;letter-spacing:0;color:#1A1814}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:#1A1814;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:200;opacity:0;transform:translateY(6px);transition:all 0.2s;pointer-events:none}
+.toast.on{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup-screen" class="screen">
+  <div class="card">
+    <h1>Reno<span>Track</span></h1>
+    <p class="sub">Shared materials &amp; labor tracker for your home renovation</p>
+    <div id="s-home">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-green" onclick="show('s-create')" style="justify-content:center">Create a new shared tracker</button>
+        <button class="btn" onclick="show('s-join')" style="justify-content:center">I have a tracker key to join</button>
+      </div>
+    </div>
+    <div id="s-create" class="hidden">
+      <h3>Step 1 — Get a free API key</h3>
+      <p>Go to <a href="https://jsonbin.io" target="_blank">jsonbin.io</a>, sign up free, then copy your <strong>Master Key</strong> from the API Keys section.</p>
+      <label>JSONBin Master Key</label><input type="password" id="c-key" placeholder="$2a$10$...">
+      <label>Your name</label><input type="text" id="c-name" placeholder="e.g. Mom, Dad, Sarah">
+      <div id="c-err" class="err hidden"></div>
+      <div class="row">
+        <button class="btn" onclick="show('s-home')">Back</button>
+        <button class="btn btn-green" onclick="doCreate()">Create tracker</button>
+      </div>
+    </div>
+    <div id="s-join" class="hidden">
+      <h3>Join existing tracker</h3>
+      <p>Enter the tracker key your family shared, your own JSONBin Master Key, and your name.</p>
+      <label>Tracker key</label><input type="text" id="j-tid" placeholder="Paste tracker key here">
+      <label>Your JSONBin Master Key</label><input type="password" id="j-key" placeholder="$2a$10$...">
+      <label>Your name</label><input type="text" id="j-name" placeholder="e.g. Mom, Dad, Sarah">
+      <div id="j-err" class="err hidden"></div>
+      <div class="row">
+        <button class="btn" onclick="show('s-home')">Back</button>
+        <button class="btn btn-green" onclick="doJoin()">Join tracker</button>
+      </div>
+    </div>
+    <div id="s-done" class="hidden">
+      <h3>Tracker created!</h3>
+      <p style="margin-bottom:12px">Share this key with family. They open this app, choose "Join existing tracker," paste this key plus their own JSONBin Master Key and name.</p>
+      <label>Tracker key — share this</label>
+      <div style="display:flex;gap:6px;margin-top:4px">
+        <input type="text" id="done-key" readonly style="background:#F7F5F0;font-family:monospace;font-size:13px">
+        <button class="btn btn-sm" onclick="copyKey('done-key')">Copy</button>
+      </div>
+      <div style="margin-top:14px"><button class="btn btn-green" onclick="goApp()" style="width:100%;justify-content:center">Open tracker →</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen" class="hidden">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="logo">Reno<span>Track</span></div>
+      <div class="sync"><div class="dot" id="sdot"></div><span id="slbl">Loading…</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:13px;color:#6B6660" id="uname"></span>
+      <button class="btn btn-sm" onclick="openModal()">Share key</button>
+      <button class="btn btn-sm" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="topnav">
+    <button class="tnav on" id="tnav-materials" onclick="switchTopTab('materials')">Materials</button>
+    <button class="tnav labor-tab" id="tnav-labor" onclick="switchTopTab('labor')">Labor &amp; Invoices</button>
+  </div>
+
+
+  <!-- COMBINED SUMMARY BAR -->
+  <div class="summary-bar">
+    <div class="summary-bar-inner">
+      <div class="sb-item">
+        <div class="sb-label">Total estimated / contracted</div>
+        <div class="sb-value" id="cs-total">$0</div>
+        <div class="sb-breakdown"><span>Materials <b id="cs-mat-est">$0</b></span><span>Labor <b id="cs-lab-total">$0</b></span></div>
+      </div>
+      <div class="sb-item">
+        <div class="sb-label">Purchased / paid</div>
+        <div class="sb-value" id="cs-paid">$0</div>
+        <div class="sb-breakdown"><span>Materials <b id="cs-mat-paid">$0</b></span><span>Labor <b id="cs-lab-paid">$0</b></span></div>
+        <div class="sb-bar"><div class="sb-bar-fill" id="cs-bar" style="width:0%"></div></div>
+      </div>
+      <div class="sb-item">
+        <div class="sb-label">Remaining</div>
+        <div class="sb-value" id="cs-rem">$0</div>
+        <div class="sb-breakdown"><span>Materials <b id="cs-mat-rem">$0</b></span><span>Labor <b id="cs-lab-rem">$0</b></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MATERIALS TAB -->
+  <div id="tab-materials" class="main">
+    <div class="stats" id="mat-stats">
+      <div class="stat"><div class="stat-lbl">Items</div><div class="stat-val" id="st0">0</div></div>
+      <div class="stat"><div class="stat-lbl">Estimated</div><div class="stat-val" id="st1">$0</div></div>
+      <div class="stat green"><div class="stat-lbl">Purchased</div><div class="stat-val" id="st2">$0</div></div>
+      <div class="stat"><div class="stat-lbl">Remaining</div><div class="stat-val" id="st3">$0</div></div>
+    </div>
+    <div class="toolbar">
+      <div class="ftabs">
+        <button class="ftab on" onclick="setF('all',this)">All</button>
+        <button class="ftab" onclick="setF('pending',this)">Pending</button>
+        <button class="ftab" onclick="setF('purchased',this)">Purchased</button>
+      </div>
+      <button class="btn btn-green btn-sm" onclick="toggleMatForm()">+ Add material</button>
+    </div>
+    <div id="mat-form" class="add-form hidden">
+      <div style="font-size:15px;font-weight:500;margin-bottom:12px" id="mfh">Add material</div>
+      <div class="fg">
+        <div><label>Item name *</label><input id="fn" type="text" placeholder="e.g. Kohler faucet"></div>
+        <div><label>Category *</label><select id="fc"><option value="bathroom">Bathroom</option><option value="kitchen">Kitchen</option><option value="windows">Windows</option><option value="flooring">Flooring</option><option value="other">Other</option></select></div>
+      </div>
+      <div class="fg">
+        <div><label>Room</label><input id="fr" type="text" placeholder="e.g. Master bath"></div>
+        <div><label>Estimated cost ($)</label><input id="fe" type="number" placeholder="0.00" step="0.01"></div>
+      </div>
+      <div class="fg full">
+        <div>
+          <label>Product URL</label>
+          <input id="fu" type="url" placeholder="https://..." oninput="urlInput(this)">
+          <div class="prev" id="uprev">
+            <img id="ufav" src="" alt="" onerror="this.style.display='none'">
+            <div><div class="prev-dom" id="udom"></div><div class="prev-url" id="uurl"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="fg full">
+        <div>
+          <label>Product image URL <span style="font-size:11px;color:#9E9A95">(right-click product photo → Copy image address)</span></label>
+          <input id="fi" type="url" placeholder="https://..." oninput="imgInput(this)">
+          <div class="prev" id="iprev" style="margin-top:6px">
+            <img id="iimg" src="" alt="" style="width:52px;height:52px;border-radius:6px;border:1px solid #E0DCD4;object-fit:cover" onerror="this.parentElement.classList.remove('on')">
+            <div style="font-size:12px;color:#6B6660">Image preview</div>
+          </div>
+        </div>
+      </div>
+      <div class="fg full"><div><label>Notes</label><textarea id="fno" placeholder="Color, finish, model #, dimensions…"></textarea></div></div>
+      <div class="factions">
+        <button class="btn btn-green" onclick="saveItem()">Save</button>
+        <button class="btn" onclick="cancelMatForm()">Cancel</button>
+      </div>
+      <input type="hidden" id="fid">
+    </div>
+    <div class="cattabs">
+      <button class="ctab on" onclick="setC('all',this)">All rooms</button>
+      <button class="ctab" onclick="setC('bathroom',this)">Bathroom</button>
+      <button class="ctab" onclick="setC('kitchen',this)">Kitchen</button>
+      <button class="ctab" onclick="setC('windows',this)">Windows</button>
+      <button class="ctab" onclick="setC('flooring',this)">Flooring</button>
+      <button class="ctab" onclick="setC('other',this)">Other</button>
+    </div>
+    <div class="items" id="items"></div>
+  </div>
+
+  <!-- LABOR TAB -->
+  <div id="tab-labor" class="main hidden">
+    <div class="stats">
+      <div class="stat amber"><div class="stat-lbl">Total contracted</div><div class="stat-val" id="lt0">$0</div></div>
+      <div class="stat green"><div class="stat-lbl">Paid to date</div><div class="stat-val" id="lt1">$0</div></div>
+      <div class="stat"><div class="stat-lbl">Expected upcoming</div><div class="stat-val" id="lt2">$0</div></div>
+      <div class="stat red"><div class="stat-lbl">Overdue</div><div class="stat-val" id="lt3">$0</div></div>
+    </div>
+
+    <!-- Pay schedule summary -->
+    <div class="l-summary" id="l-summary-wrap">
+      <div class="l-summary-title">Payment schedule overview</div>
+      <table class="l-table">
+        <thead><tr><th>Payee</th><th>Phase / description</th><th>Due date</th><th>Amount</th><th>Status</th></tr></thead>
+        <tbody id="l-summary-body"></tbody>
+      </table>
+    </div>
+
+    <div class="toolbar">
+      <div class="ftabs">
+        <button class="ftab on" onclick="setLF('all',this)">All</button>
+        <button class="ftab" onclick="setLF('expected',this)">Expected</button>
+        <button class="ftab" onclick="setLF('paid',this)">Paid</button>
+        <button class="ftab" onclick="setLF('overdue',this)">Overdue</button>
+      </div>
+      <button class="btn btn-amber btn-sm" onclick="toggleLaborForm()">+ Add invoice</button>
+    </div>
+
+    <div id="labor-form" class="add-form hidden" style="border-color:#D4B483">
+      <div style="font-size:15px;font-weight:500;margin-bottom:12px" id="lfh">Add invoice / payment</div>
+      <div class="fg">
+        <div><label>Payee / contractor *</label><input id="lf-payee" type="text" placeholder="e.g. Smith Plumbing"></div>
+        <div><label>Invoice #</label><input id="lf-inv" type="text" placeholder="e.g. INV-001"></div>
+      </div>
+      <div class="fg">
+        <div><label>Amount ($) *</label><input id="lf-amt" type="number" placeholder="0.00" step="0.01"></div>
+        <div><label>Due date</label><input id="lf-due" type="date"></div>
+      </div>
+      <div class="fg">
+        <div><label>Phase / description</label><input id="lf-phase" type="text" placeholder="e.g. Rough-in, Final payment, Deposit"></div>
+        <div><label>Category</label><select id="lf-cat"><option value="plumbing">Plumbing</option><option value="electrical">Electrical</option><option value="carpentry">Carpentry</option><option value="tile">Tile &amp; flooring</option><option value="painting">Painting</option><option value="general">General contractor</option><option value="design">Design / architecture</option><option value="other">Other</option></select></div>
+      </div>
+      <div class="fg full"><div><label>Notes</label><textarea id="lf-notes" placeholder="Payment terms, scope of work, contact info…"></textarea></div></div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid #E0DCD4">
+        <div style="font-size:13px;font-weight:500;margin-bottom:8px;color:#6B6660">Mark as paid now? (leave blank if this is an expected future invoice)</div>
+        <div class="fg three">
+          <div><label>Date paid</label><input id="lf-pdate" type="date"></div>
+          <div><label>Payment method</label><select id="lf-method"><option value="">— Not paid yet —</option><option>Check</option><option>ACH / bank transfer</option><option>Zelle / Venmo</option><option>Credit card</option><option>Cash</option><option>Financing</option></select></div>
+          <div><label>Check # / reference</label><input id="lf-ref" type="text" placeholder="e.g. #1042"></div>
+        </div>
+      </div>
+      <div class="factions">
+        <button class="btn btn-amber" onclick="saveLaborItem()">Save</button>
+        <button class="btn" onclick="cancelLaborForm()">Cancel</button>
+      </div>
+      <input type="hidden" id="lfid">
+    </div>
+
+    <div class="items" id="labor-items"></div>
+  </div>
+</div>
+
+<!-- Share modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3>Share tracker key</h3>
+    <p style="margin-bottom:12px">Send family members this key. They open the app, choose "Join existing tracker," and enter their own free JSONBin Master Key plus this tracker key.</p>
+    <label>Tracker key</label>
+    <div style="display:flex;gap:6px;margin-top:4px">
+      <input type="text" id="mkey" readonly style="background:#F7F5F0;font-family:monospace;font-size:13px">
+      <button class="btn btn-sm" onclick="copyKey('mkey')">Copy</button>
+    </div>
+    <div style="text-align:right;margin-top:16px"><button class="btn btn-green btn-sm" onclick="closeModal()">Done</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var cfg = {key:'',tid:'',name:''};
+var items = [];
+var laborItems = [];
+var matFilt = 'all', matCat = 'all';
+var laborFilt = 'all';
+var eid = null, leid = null;
+var syncInt = null, lastHash = '';
+var currentTopTab = 'materials';
+
+// --- Setup ---
+function show(id) {
+  ['s-home','s-create','s-join','s-done'].forEach(function(s){
+    var el=document.getElementById(s);
+    if(el) el.classList.add('hidden');
+  });
+  var t=document.getElementById(id);
+  if(t) t.classList.remove('hidden');
+}
+
+function errMsg(id,msg){var el=document.getElementById(id);el.textContent=msg;el.classList.remove('hidden');}
+function clearErr(id){document.getElementById(id).classList.add('hidden');}
+
+async function doCreate() {
+  clearErr('c-err');
+  var key=document.getElementById('c-key').value.trim();
+  var name=document.getElementById('c-name').value.trim();
+  if(!key||!name){errMsg('c-err','Please fill in all fields.');return;}
+  try {
+    var r=await fetch('https://api.jsonbin.io/v3/b',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Master-Key':key,'X-Bin-Private':'true','X-Bin-Name':'RenoTracker'},
+      body:JSON.stringify({items:[],laborItems:[]})
+    });
+    if(!r.ok) throw new Error('Status '+r.status);
+    var d=await r.json();
+    cfg={key:key,tid:d.metadata.id,name:name};
+    document.getElementById('done-key').value=cfg.tid;
+    show('s-done');
+  } catch(e) {
+    errMsg('c-err','Could not connect. Check your Master Key and try again. ('+e.message+')');
+  }
+}
+
+async function doJoin() {
+  clearErr('j-err');
+  var tid=document.getElementById('j-tid').value.trim();
+  var key=document.getElementById('j-key').value.trim();
+  var name=document.getElementById('j-name').value.trim();
+  if(!tid||!key||!name){errMsg('j-err','Please fill in all fields.');return;}
+  try {
+    var r=await fetch('https://api.jsonbin.io/v3/b/'+tid+'/latest',{headers:{'X-Master-Key':key}});
+    if(!r.ok) throw new Error('Status '+r.status);
+    cfg={key:key,tid:tid,name:name};
+    goApp();
+  } catch(e) {
+    errMsg('j-err','Could not connect. Check the tracker key and Master Key. ('+e.message+')');
+  }
+}
+
+function signOut(){
+  cfg={key:'',tid:'',name:''};
+  clearInterval(syncInt);
+  document.getElementById('app-screen').classList.add('hidden');
+  document.getElementById('setup-screen').classList.remove('hidden');
+  show('s-home');
+}
+
+function goApp(){
+  document.getElementById('setup-screen').classList.add('hidden');
+  document.getElementById('app-screen').classList.remove('hidden');
+  document.getElementById('uname').textContent=cfg.name;
+  document.getElementById('mkey').value=cfg.tid;
+  fetchData();
+  syncInt=setInterval(fetchData,20000);
+}
+
+// --- Sync ---
+function setSync(s){
+  document.getElementById('sdot').className='dot '+s;
+  document.getElementById('slbl').textContent=s==='ok'?'Synced':s==='spin'?'Syncing…':'Offline';
+}
+
+async function fetchData(){
+  setSync('spin');
+  try {
+    var r=await fetch('https://api.jsonbin.io/v3/b/'+cfg.tid+'/latest',{headers:{'X-Master-Key':cfg.key}});
+    if(!r.ok) throw new Error();
+    var d=await r.json();
+    var h=JSON.stringify(d.record);
+    if(h!==lastHash){
+      items=d.record.items||[];
+      laborItems=d.record.laborItems||[];
+      lastHash=h;
+      renderMaterials();matStats();
+      renderLabor();laborStats();
+    }
+    setSync('ok');
+  } catch(e){setSync('err');}
+}
+
+async function push(){
+  setSync('spin');
+  try {
+    var r=await fetch('https://api.jsonbin.io/v3/b/'+cfg.tid,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key':cfg.key},
+      body:JSON.stringify({items:items,laborItems:laborItems})
+    });
+    if(!r.ok) throw new Error();
+    lastHash=JSON.stringify({items:items,laborItems:laborItems});
+    setSync('ok');
+  } catch(e){setSync('err');}
+}
+
+// --- Helpers ---
+function dom(url){try{return new URL(url).hostname.replace('www.','')}catch(e){return url}}
+function fav(url){try{return'https://www.google.com/s2/favicons?domain='+new URL(url).origin+'&sz=64'}catch(e){return''}}
+function esc(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
+function money(n){return'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}
+function money2(n){return'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function catLbl(c){return{bathroom:'Bathroom',kitchen:'Kitchen',windows:'Windows',flooring:'Flooring',other:'Other'}[c]||c}
+function laborCatLbl(c){return{plumbing:'Plumbing',electrical:'Electrical',carpentry:'Carpentry',tile:'Tile & flooring',painting:'Painting',general:'General contractor',design:'Design / architecture',other:'Other'}[c]||c}
+function today(){return new Date().toISOString().split('T')[0]}
+function isOverdue(item){return !item.paid && item.dueDate && item.dueDate < today()}
+
+function toast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('on');
+  setTimeout(function(){t.classList.remove('on');},2200);
+}
+function copyKey(id){navigator.clipboard.writeText(document.getElementById(id).value).then(function(){toast('Copied!');});}
+function openModal(){document.getElementById('modal').classList.add('on');}
+function closeModal(){document.getElementById('modal').classList.remove('on');}
+
+// --- Top tab switch ---
+function switchTopTab(tab){
+  currentTopTab=tab;
+  document.getElementById('tab-materials').classList.toggle('hidden',tab!=='materials');
+  document.getElementById('tab-labor').classList.toggle('hidden',tab!=='labor');
+  document.getElementById('tnav-materials').classList.toggle('on',tab==='materials');
+  document.getElementById('tnav-labor').classList.toggle('on',tab==='labor');
+}
+
+// --- Materials ---
+function setF(f,btn){matFilt=f;document.querySelectorAll('.ftab').forEach(function(b){b.classList.remove('on');});btn.classList.add('on');renderMaterials();}
+function setC(c,btn){matCat=c;document.querySelectorAll('.ctab').forEach(function(b){b.classList.remove('on');});btn.classList.add('on');renderMaterials();}
+
+function toggleMatForm(){
+  eid=null;
+  ['fid','fn','fr','fu','fi','fno'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('fc').value='bathroom';
+  document.getElementById('fe').value='';
+  document.getElementById('uprev').className='prev';
+  document.getElementById('iprev').className='prev';
+  document.getElementById('mfh').textContent='Add material';
+  var f=document.getElementById('mat-form');
+  f.classList.toggle('hidden');
+  if(!f.classList.contains('hidden')) f.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function cancelMatForm(){eid=null;document.getElementById('mat-form').classList.add('hidden');}
+
+function editItem(id){
+  var item=items.find(function(i){return i.id===id;});
+  if(!item)return;
+  eid=id;
+  document.getElementById('fid').value=id;
+  document.getElementById('fn').value=item.name;
+  document.getElementById('fc').value=item.category;
+  document.getElementById('fr').value=item.room||'';
+  document.getElementById('fe').value=item.estimatedCost||'';
+  document.getElementById('fu').value=item.url||'';
+  document.getElementById('fi').value=item.imageUrl||'';
+  document.getElementById('fno').value=item.notes||'';
+  document.getElementById('mfh').textContent='Edit item';
+  if(item.url) showPrev(item.url);
+  if(item.imageUrl){document.getElementById('iimg').src=item.imageUrl;document.getElementById('iprev').className='prev on';}
+  var f=document.getElementById('mat-form');
+  f.classList.remove('hidden');
+  f.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+var urlTmr,imgTmr;
+function urlInput(el){clearTimeout(urlTmr);urlTmr=setTimeout(function(){showPrev(el.value);},500);}
+function imgInput(el){clearTimeout(imgTmr);imgTmr=setTimeout(function(){var u=el.value.trim();if(u&&u.startsWith('http')){document.getElementById('iimg').src=u;document.getElementById('iprev').className='prev on';}else{document.getElementById('iprev').className='prev';}},500);}
+function showPrev(url){
+  if(!url||!url.startsWith('http')){document.getElementById('uprev').className='prev';return;}
+  document.getElementById('ufav').src=fav(url);
+  document.getElementById('ufav').style.display='';
+  document.getElementById('udom').textContent=dom(url);
+  document.getElementById('uurl').textContent=url.length>55?url.substring(0,55)+'…':url;
+  document.getElementById('uprev').className='prev on';
+}
+
+async function saveItem(){
+  var name=document.getElementById('fn').value.trim();
+  if(!name){toast('Please enter a name');return;}
+  var existing=eid?items.find(function(i){return i.id===eid;}):null;
+  var item={
+    id:eid||(Date.now().toString(36)+Math.random().toString(36).slice(2,5)),
+    name:name,
+    category:document.getElementById('fc').value,
+    room:document.getElementById('fr').value.trim(),
+    estimatedCost:parseFloat(document.getElementById('fe').value)||0,
+    url:document.getElementById('fu').value.trim(),
+    imageUrl:document.getElementById('fi').value.trim(),
+    notes:document.getElementById('fno').value.trim(),
+    addedBy:cfg.name,
+    addedAt:existing?existing.addedAt:Date.now(),
+    purchased:existing?existing.purchased:false,
+    purchaseDetails:existing?existing.purchaseDetails:null
+  };
+  if(eid){var idx=items.findIndex(function(i){return i.id===eid;});if(idx>-1)items[idx]=item;}
+  else{items.unshift(item);}
+  cancelMatForm();renderMaterials();matStats();
+  await push();toast(eid?'Item updated':'Item added');
+}
+
+async function delItem(id){
+  if(!confirm('Remove this item?'))return;
+  items=items.filter(function(i){return i.id!==id;});
+  renderMaterials();matStats();await push();toast('Removed');
+}
+
+function togglePF(id){document.getElementById('pf-'+id).classList.toggle('hidden');}
+
+async function markBought(id){
+  var item=items.find(function(i){return i.id===id;});
+  if(!item)return;
+  item.purchased=true;
+  item.purchaseDetails={
+    actualCost:parseFloat(document.getElementById('pfc-'+id).value)||item.estimatedCost||0,
+    method:document.getElementById('pfm-'+id).value,
+    store:document.getElementById('pfs-'+id).value.trim(),
+    date:today(),by:cfg.name
+  };
+  renderMaterials();matStats();await push();toast('Marked as purchased!');
+}
+
+async function unmarkBought(id){
+  var item=items.find(function(i){return i.id===id;});
+  if(!item)return;
+  item.purchased=false;item.purchaseDetails=null;
+  renderMaterials();matStats();await push();toast('Purchase undone');
+}
+
+function getMatList(){
+  var list=items;
+  if(matCat!=='all') list=list.filter(function(i){return i.category===matCat;});
+  if(matFilt==='pending') list=list.filter(function(i){return !i.purchased;});
+  if(matFilt==='purchased') list=list.filter(function(i){return i.purchased;});
+  return list;
+}
+
+function renderMaterials(){
+  var list=getMatList();
+  var el=document.getElementById('items');
+  if(!list.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">🏠</div><div style="font-size:15px;font-weight:500;margin-bottom:4px">No items here yet</div><div style="font-size:13px">Add your first material above</div></div>';
+    return;
+  }
+  el.innerHTML=list.map(function(item){
+    var f=item.imageUrl?item.imageUrl:(item.url?fav(item.url):'');
+    var pd=item.purchaseDetails;
+    return '<div class="ic'+(item.purchased?' bought':'')+'" id="card-'+item.id+'">'
+      +'<div class="ic-top">'
+        +'<div><div class="ic-name">'+esc(item.name)+'</div>'+(item.room?'<div class="ic-room">'+esc(item.room)+'</div>':'')+'</div>'
+        +'<div class="badges">'
+          +'<span class="badge b-'+item.category+'">'+catLbl(item.category)+'</span>'
+          +'<span class="badge '+(item.purchased?'b-bought':'b-pending')+'">'+(item.purchased?'Purchased':'Considering')+'</span>'
+          +'<button class="btn btn-ghost btn-sm" onclick="delItem(\''+item.id+'\')" style="padding:3px 7px;font-size:15px;line-height:1">×</button>'
+        +'</div>'
+      +'</div>'
+      +'<div class="ic-body">'
+        +'<div class="thumb">'+(f?'<img src="'+f+'" alt="" onerror="this.parentElement.innerHTML=\'<span class=thumb-ph>No preview</span>\'">':'<span class="thumb-ph">No link</span>')+'</div>'
+        +'<div class="ic-info">'
+          +'<div class="ic-meta">'
+            +(item.estimatedCost?'<span>Est. <strong>'+money2(item.estimatedCost)+'</strong></span>':'')
+            +(pd?'<span style="color:#2D5A3D">Paid <strong style="color:#2D5A3D">'+money2(pd.actualCost)+'</strong></span>':'')
+            +(pd?'<span>'+esc(pd.method)+(pd.store?' · '+esc(pd.store):'')+'</span>':'')
+            +(pd?'<span>'+pd.date+(pd.by?' by '+esc(pd.by):'')+'</span>':'')
+            +(item.addedBy?'<span style="color:#9E9A95">Added by '+esc(item.addedBy)+'</span>':'')
+          +'</div>'
+          +(item.notes?'<div class="ic-notes">'+esc(item.notes)+'</div>':'')
+          +'<div class="ic-actions">'
+            +(item.url?'<a class="ic-link" href="'+item.url+'" target="_blank">View product ↗</a>':'')
+            +'<button class="btn btn-sm" onclick="editItem(\''+item.id+'\')">Edit</button>'
+            +(!item.purchased
+              ?'<button class="btn btn-sm" onclick="togglePF(\''+item.id+'\')" style="color:#2D5A3D;border-color:#2D5A3D">Mark purchased</button>'
+              :'<button class="btn btn-sm" onclick="unmarkBought(\''+item.id+'\')">Undo purchase</button>')
+          +'</div>'
+          +(!item.purchased
+            ?'<div class="pf hidden" id="pf-'+item.id+'">'
+              +'<div class="pf-title">Confirm purchase details</div>'
+              +'<div class="fg three">'
+                +'<div><label style="font-size:11px;color:#1A3D28">Actual cost ($)</label><input type="number" id="pfc-'+item.id+'" value="'+(item.estimatedCost||'')+'" step="0.01"></div>'
+                +'<div><label style="font-size:11px;color:#1A3D28">Payment method</label><select id="pfm-'+item.id+'"><option>Credit card</option><option>Debit card</option><option>Cash</option><option>Check</option><option>Financing</option><option>Zelle / Venmo</option></select></div>'
+                +'<div><label style="font-size:11px;color:#1A3D28">Store / vendor</label><input type="text" id="pfs-'+item.id+'" placeholder="Home Depot…"></div>'
+              +'</div>'
+              +'<button class="btn btn-green btn-sm" onclick="markBought(\''+item.id+'\')">Confirm purchase</button>'
+            +'</div>'
+          :'')
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+
+function matStats(){
+  var est=items.reduce(function(s,i){return s+(i.estimatedCost||0);},0);
+  var paid=items.filter(function(i){return i.purchased;}).reduce(function(s,i){return s+(i.purchaseDetails?i.purchaseDetails.actualCost:0);},0);
+  document.getElementById('st0').textContent=items.length;
+  document.getElementById('st1').textContent=money(est);
+  document.getElementById('st2').textContent=money(paid);
+  document.getElementById('st3').textContent=money(Math.max(0,est-paid));
+  updateSummary();
+}
+
+// --- Labor ---
+function setLF(f,btn){
+  laborFilt=f;
+  document.querySelectorAll('#tab-labor .ftab').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  renderLabor();
+}
+
+function toggleLaborForm(){
+  leid=null;
+  ['lfid','lf-payee','lf-inv','lf-amt','lf-due','lf-phase','lf-notes','lf-pdate','lf-ref'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('lf-cat').value='plumbing';
+  document.getElementById('lf-method').value='';
+  document.getElementById('lfh').textContent='Add invoice / payment';
+  var f=document.getElementById('labor-form');
+  f.classList.toggle('hidden');
+  if(!f.classList.contains('hidden')) f.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function cancelLaborForm(){leid=null;document.getElementById('labor-form').classList.add('hidden');}
+
+function editLaborItem(id){
+  var item=laborItems.find(function(i){return i.id===id;});
+  if(!item)return;
+  leid=id;
+  document.getElementById('lfid').value=id;
+  document.getElementById('lf-payee').value=item.payee;
+  document.getElementById('lf-inv').value=item.invoiceNum||'';
+  document.getElementById('lf-amt').value=item.amount||'';
+  document.getElementById('lf-due').value=item.dueDate||'';
+  document.getElementById('lf-phase').value=item.phase||'';
+  document.getElementById('lf-cat').value=item.category||'other';
+  document.getElementById('lf-notes').value=item.notes||'';
+  document.getElementById('lf-pdate').value=item.paidDate||'';
+  document.getElementById('lf-method').value=item.payMethod||'';
+  document.getElementById('lf-ref').value=item.payRef||'';
+  document.getElementById('lfh').textContent='Edit invoice';
+  var f=document.getElementById('labor-form');
+  f.classList.remove('hidden');
+  f.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function saveLaborItem(){
+  var payee=document.getElementById('lf-payee').value.trim();
+  var amt=parseFloat(document.getElementById('lf-amt').value)||0;
+  if(!payee){toast('Please enter a payee name');return;}
+  var pdate=document.getElementById('lf-pdate').value;
+  var method=document.getElementById('lf-method').value;
+  var item={
+    id:leid||(Date.now().toString(36)+Math.random().toString(36).slice(2,5)),
+    payee:payee,
+    invoiceNum:document.getElementById('lf-inv').value.trim(),
+    amount:amt,
+    dueDate:document.getElementById('lf-due').value,
+    phase:document.getElementById('lf-phase').value.trim(),
+    category:document.getElementById('lf-cat').value,
+    notes:document.getElementById('lf-notes').value.trim(),
+    paid:!!(pdate&&method),
+    paidDate:pdate||'',
+    payMethod:method,
+    payRef:document.getElementById('lf-ref').value.trim(),
+    addedBy:cfg.name,
+    addedAt:leid?(laborItems.find(function(i){return i.id===leid;})||{}).addedAt||Date.now():Date.now()
+  };
+  if(leid){var idx=laborItems.findIndex(function(i){return i.id===leid;});if(idx>-1)laborItems[idx]=item;}
+  else{laborItems.unshift(item);}
+  cancelLaborForm();renderLabor();laborStats();
+  await push();toast(leid?'Invoice updated':'Invoice added');
+}
+
+async function delLaborItem(id){
+  if(!confirm('Remove this invoice?'))return;
+  laborItems=laborItems.filter(function(i){return i.id!==id;});
+  renderLabor();laborStats();await push();toast('Removed');
+}
+
+function toggleLPF(id){document.getElementById('lpf-'+id).classList.toggle('hidden');}
+
+async function markLaborPaid(id){
+  var item=laborItems.find(function(i){return i.id===id;});
+  if(!item)return;
+  var pdate=document.getElementById('lpfd-'+id).value||today();
+  var method=document.getElementById('lpfm-'+id).value;
+  var ref=document.getElementById('lpfr-'+id).value.trim();
+  item.paid=true;item.paidDate=pdate;item.payMethod=method;item.payRef=ref;
+  renderLabor();laborStats();await push();toast('Marked as paid!');
+}
+
+async function unmarkLaborPaid(id){
+  var item=laborItems.find(function(i){return i.id===id;});
+  if(!item)return;
+  item.paid=false;item.paidDate='';item.payMethod='';item.payRef='';
+  renderLabor();laborStats();await push();toast('Payment undone');
+}
+
+function getLaborList(){
+  var list=laborItems;
+  if(laborFilt==='expected') list=list.filter(function(i){return !i.paid&&!isOverdue(i);});
+  if(laborFilt==='paid') list=list.filter(function(i){return i.paid;});
+  if(laborFilt==='overdue') list=list.filter(function(i){return isOverdue(i);});
+  return list;
+}
+
+function renderLabor(){
+  var list=getLaborList();
+  var el=document.getElementById('labor-items');
+  if(!list.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">📋</div><div style="font-size:15px;font-weight:500;margin-bottom:4px">No invoices here yet</div><div style="font-size:13px">Add your first invoice or expected payment above</div></div>';
+  } else {
+    el.innerHTML=list.map(function(item){
+      var overdue=isOverdue(item);
+      var statusClass=item.paid?'b-paid':(overdue?'b-overdue':'b-expected');
+      var statusLbl=item.paid?'Paid':(overdue?'Overdue':'Expected');
+      var cardClass='lc'+(item.paid?' paid':'')+(overdue?' overdue':'');
+      return '<div class="'+cardClass+'" id="lcard-'+item.id+'">'
+        +'<div class="lc-top">'
+          +'<div><div class="lc-payee">'+esc(item.payee)+(item.invoiceNum?'<span style="font-size:12px;font-weight:400;color:#9E9A95;margin-left:8px">'+esc(item.invoiceNum)+'</span>':'')+'</div>'
+            +(item.phase?'<div class="lc-desc">'+esc(item.phase)+'</div>':'')
+          +'</div>'
+          +'<div class="badges">'
+            +'<span class="badge b-phase">'+laborCatLbl(item.category)+'</span>'
+            +'<span class="badge '+statusClass+'">'+statusLbl+'</span>'
+            +'<button class="btn btn-ghost btn-sm" onclick="delLaborItem(\''+item.id+'\')" style="padding:3px 7px;font-size:15px;line-height:1">×</button>'
+          +'</div>'
+        +'</div>'
+        +'<div class="lc-meta">'
+          +'<span><strong>'+money2(item.amount)+'</strong></span>'
+          +(item.dueDate?'<span>'+(overdue?'<span style="color:#C0392B;font-weight:500">':'')+'Due '+item.dueDate+(overdue?'</span>':'')+'</span>':'')
+          +(item.paid&&item.paidDate?'<span style="color:#2D5A3D">Paid '+item.paidDate+(item.payMethod?' · '+esc(item.payMethod):'')+(item.payRef?' · '+esc(item.payRef):'')+'</span>':'')
+          +(item.addedBy?'<span style="color:#9E9A95">Added by '+esc(item.addedBy)+'</span>':'')
+        +'</div>'
+        +(item.notes?'<div class="ic-notes" style="margin:4px 0 6px">'+esc(item.notes)+'</div>':'')
+        +'<div class="lc-actions">'
+          +'<button class="btn btn-sm" onclick="editLaborItem(\''+item.id+'\')">Edit</button>'
+          +(!item.paid
+            ?'<button class="btn btn-sm" onclick="toggleLPF(\''+item.id+'\')" style="color:#7A4F08;border-color:#C4820A">Mark paid</button>'
+            :'<button class="btn btn-sm" onclick="unmarkLaborPaid(\''+item.id+'\')">Undo payment</button>')
+        +'</div>'
+        +(!item.paid
+          ?'<div class="lpf hidden" id="lpf-'+item.id+'">'
+            +'<div class="lpf-title">Confirm payment details</div>'
+            +'<div class="fg three">'
+              +'<div><label style="font-size:11px;color:#7A4F08">Date paid</label><input type="date" id="lpfd-'+item.id+'" value="'+today()+'"></div>'
+              +'<div><label style="font-size:11px;color:#7A4F08">Payment method</label><select id="lpfm-'+item.id+'"><option>Check</option><option>ACH / bank transfer</option><option>Zelle / Venmo</option><option>Credit card</option><option>Cash</option><option>Financing</option></select></div>'
+              +'<div><label style="font-size:11px;color:#7A4F08">Check # / reference</label><input type="text" id="lpfr-'+item.id+'" placeholder="e.g. #1042"></div>'
+            +'</div>'
+            +'<button class="btn btn-amber btn-sm" onclick="markLaborPaid(\''+item.id+'\')">Confirm payment</button>'
+          +'</div>'
+          :'')
+      +'</div>';
+    }).join('');
+  }
+
+  // Summary table
+  var all=laborItems.slice().sort(function(a,b){return (a.dueDate||'').localeCompare(b.dueDate||'');});
+  var tbody=document.getElementById('l-summary-body');
+  if(!all.length){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#9E9A95;padding:16px">No invoices yet</td></tr>';
+  } else {
+    tbody.innerHTML=all.map(function(item){
+      var overdue=isOverdue(item);
+      var statusClass=item.paid?'b-paid':(overdue?'b-overdue':'b-expected');
+      var statusLbl=item.paid?'Paid':(overdue?'Overdue':'Expected');
+      return '<tr>'
+        +'<td>'+esc(item.payee)+'</td>'
+        +'<td>'+esc(item.phase||laborCatLbl(item.category))+(item.invoiceNum?' <span style="color:#9E9A95;font-size:12px">'+esc(item.invoiceNum)+'</span>':'')+'</td>'
+        +'<td>'+(item.dueDate?item.dueDate:'—')+'</td>'
+        +'<td style="font-weight:500">'+money2(item.amount)+'</td>'
+        +'<td><span class="badge '+statusClass+'">'+statusLbl+'</span></td>'
+        +'</tr>';
+    }).join('')
+    +'<tr class="total-row">'
+      +'<td colspan="3">Total</td>'
+      +'<td>'+money2(all.reduce(function(s,i){return s+i.amount;},0))+'</td>'
+      +'<td></td>'
+    +'</tr>';
+  }
+}
+
+function laborStats(){
+  var total=laborItems.reduce(function(s,i){return s+i.amount;},0);
+  var paid=laborItems.filter(function(i){return i.paid;}).reduce(function(s,i){return s+i.amount;},0);
+  var expected=laborItems.filter(function(i){return !i.paid&&!isOverdue(i);}).reduce(function(s,i){return s+i.amount;},0);
+  var overdue=laborItems.filter(function(i){return isOverdue(i);}).reduce(function(s,i){return s+i.amount;},0);
+  document.getElementById('lt0').textContent=money(total);
+  document.getElementById('lt1').textContent=money(paid);
+  document.getElementById('lt2').textContent=money(expected);
+  document.getElementById('lt3').textContent=money(overdue);
+  updateSummary();
+}
+
+function updateSummary(){
+  var matEst=items.reduce(function(s,i){return s+(i.estimatedCost||0);},0);
+  var matPaid=items.filter(function(i){return i.purchased;}).reduce(function(s,i){return s+(i.purchaseDetails?i.purchaseDetails.actualCost:0);},0);
+  var matRem=Math.max(0,matEst-matPaid);
+  var labTotal=laborItems.reduce(function(s,i){return s+i.amount;},0);
+  var labPaid=laborItems.filter(function(i){return i.paid;}).reduce(function(s,i){return s+i.amount;},0);
+  var labRem=Math.max(0,labTotal-labPaid);
+  var total=matEst+labTotal;
+  var paid=matPaid+labPaid;
+  var rem=matRem+labRem;
+  var pct=total>0?Math.round(paid/total*100):0;
+  document.getElementById("cs-total").textContent=money(total);
+  document.getElementById("cs-mat-est").textContent=money(matEst);
+  document.getElementById("cs-lab-total").textContent=money(labTotal);
+  document.getElementById("cs-paid").textContent=money(paid);
+  document.getElementById("cs-mat-paid").textContent=money(matPaid);
+  document.getElementById("cs-lab-paid").textContent=money(labPaid);
+  document.getElementById("cs-rem").textContent=money(rem);
+  document.getElementById("cs-mat-rem").textContent=money(matRem);
+  document.getElementById("cs-lab-rem").textContent=money(labRem);
+  document.getElementById("cs-bar").style.width=pct+"%";
+}
+
+// Boot
+document.getElementById('setup-screen').classList.remove('hidden');
+</script>
+</body>
+</html>
