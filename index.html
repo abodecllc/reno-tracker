@@ -166,53 +166,6 @@ textarea{resize:vertical;min-height:65px;line-height:1.5}
 </head>
 <body>
 
-<!-- SETUP -->
-<div id="setup-screen" class="screen">
-  <div class="card">
-    <h1>Reno<span>Track</span></h1>
-    <p class="sub">Shared materials &amp; labor tracker for your home renovation</p>
-    <div id="s-home">
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <button class="btn btn-green" onclick="show('s-create')" style="justify-content:center">Create a new shared tracker</button>
-        <button class="btn" onclick="show('s-join')" style="justify-content:center">I have a tracker key to join</button>
-      </div>
-    </div>
-    <div id="s-create" class="hidden">
-      <h3>Step 1 — Get a free API key</h3>
-      <p>Go to <a href="https://jsonbin.io" target="_blank">jsonbin.io</a>, sign up free, then copy your <strong>Master Key</strong> from the API Keys section.</p>
-      <label>JSONBin Master Key</label><input type="password" id="c-key" placeholder="$2a$10$...">
-      <label>Your name</label><input type="text" id="c-name" placeholder="e.g. Mom, Dad, Sarah">
-      <div id="c-err" class="err hidden"></div>
-      <div class="row">
-        <button class="btn" onclick="show('s-home')">Back</button>
-        <button class="btn btn-green" onclick="doCreate()">Create tracker</button>
-      </div>
-    </div>
-    <div id="s-join" class="hidden">
-      <h3>Join existing tracker</h3>
-      <p>Enter the tracker key your family shared, your own JSONBin Master Key, and your name.</p>
-      <label>Tracker key</label><input type="text" id="j-tid" placeholder="Paste tracker key here">
-      <label>Your JSONBin Master Key</label><input type="password" id="j-key" placeholder="$2a$10$...">
-      <label>Your name</label><input type="text" id="j-name" placeholder="e.g. Mom, Dad, Sarah">
-      <div id="j-err" class="err hidden"></div>
-      <div class="row">
-        <button class="btn" onclick="show('s-home')">Back</button>
-        <button class="btn btn-green" onclick="doJoin()">Join tracker</button>
-      </div>
-    </div>
-    <div id="s-done" class="hidden">
-      <h3>Tracker created!</h3>
-      <p style="margin-bottom:12px">Share this key with family. They open this app, choose "Join existing tracker," paste this key plus their own JSONBin Master Key and name.</p>
-      <label>Tracker key — share this</label>
-      <div style="display:flex;gap:6px;margin-top:4px">
-        <input type="text" id="done-key" readonly style="background:#F7F5F0;font-family:monospace;font-size:13px">
-        <button class="btn btn-sm" onclick="copyKey('done-key')">Copy</button>
-      </div>
-      <div style="margin-top:14px"><button class="btn btn-green" onclick="goApp()" style="width:100%;justify-content:center">Open tracker →</button></div>
-    </div>
-  </div>
-</div>
-
 <!-- APP -->
 <div id="app-screen" class="hidden">
   <div class="topbar">
@@ -222,8 +175,6 @@ textarea{resize:vertical;min-height:65px;line-height:1.5}
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-size:13px;color:#6B6660" id="uname"></span>
-      <button class="btn btn-sm" onclick="openModal()">Share key</button>
-      <button class="btn btn-sm" onclick="signOut()">Sign out</button>
     </div>
   </div>
 
@@ -398,7 +349,7 @@ textarea{resize:vertical;min-height:65px;line-height:1.5}
 <div class="toast" id="toast"></div>
 
 <script>
-var cfg = {key:'',tid:'',name:''};
+var cfg = {key:'$2a$10$BcHZb5sGUiVEjALrjsBiSOBLoBhczrTKWVTGodXdWdU8UCwNlBqju', tid:'69ee31b8856a68218974eba8', name:'Owner'};
 var items = [];
 var laborItems = [];
 var matFilt = 'all', matCat = 'all';
@@ -928,8 +879,11 @@ function updateSummary(){
   document.getElementById("cs-bar").style.width=pct+"%";
 }
 
-// Boot
-document.getElementById('setup-screen').classList.remove('hidden');
+// Boot - go straight to app
+cfg.key = "$2a$10$BcHZb5sGUiVEjALrjsBiSOBLoBhczrTKWVTGodXdWdU8UCwNlBqju";
+cfg.tid = "69ee31b8856a68218974eba8";
+cfg.name = "Owner";
+goApp();
 </script>
 </body>
 </html>
