@@ -409,18 +409,12 @@ async function doJoin() {
 }
 
 function signOut(){
-  cfg={key:'',tid:'',name:''};
-  clearInterval(syncInt);
-  document.getElementById('app-screen').classList.add('hidden');
-  document.getElementById('setup-screen').classList.remove('hidden');
-  show('s-home');
+  location.reload();
 }
 
 function goApp(){
-  document.getElementById('setup-screen').classList.add('hidden');
   document.getElementById('app-screen').classList.remove('hidden');
   document.getElementById('uname').textContent=cfg.name;
-  document.getElementById('mkey').value=cfg.tid;
   fetchData();
   syncInt=setInterval(fetchData,20000);
 }
