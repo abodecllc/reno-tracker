@@ -297,6 +297,12 @@ textarea{resize:vertical;min-height:65px;line-height:1.5}
       </div>
       <button class="btn btn-amber btn-sm" onclick="toggleLaborForm()">+ Add invoice</button>
     </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:600;color:#9E9A95;text-transform:uppercase;letter-spacing:0.05em">Payee:</span>
+      <div id="payee-filters" style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="ftab on" onclick="setPayee('all',this)">All</button>
+      </div>
+    </div>
 
     <div id="labor-form" class="add-form hidden" style="border-color:#D4B483">
       <div style="font-size:15px;font-weight:500;margin-bottom:12px" id="lfh">Add invoice / payment</div>
@@ -353,7 +359,7 @@ var cfg = {key:'$2a$10$BcHZb5sGUiVEjALrjsBiSOBLoBhczrTKWVTGodXdWdU8UCwNlBqju', t
 var items = [];
 var laborItems = [];
 var matFilt = 'all', matCat = 'all';
-var laborFilt = 'all';
+var laborFilt = 'all', laborPayee = 'all';
 var eid = null, leid = null;
 var syncInt = null, lastHash = '';
 var currentTopTab = 'materials';
@@ -668,6 +674,33 @@ function setLF(f,btn){
   renderLabor();
 }
 
+function setPayee(p,btn){
+  laborPayee=p;
+  document.querySelectorAll("#payee-filters .ftab").forEach(function(b){b.classList.remove("on");});
+  btn.classList.add("on");
+  renderLabor();
+}
+
+function rebuildPayeeFilters(){
+  var payees=[];
+  laborItems.forEach(function(i){if(i.payee&&payees.indexOf(i.payee)===-1)payees.push(i.payee);});
+  payees.sort();
+  var el=document.getElementById("payee-filters");
+  el.innerHTML="";
+  var allBtn=document.createElement("button");
+  allBtn.className="ftab"+(laborPayee==="all"?" on":"");
+  allBtn.textContent="All";
+  allBtn.onclick=function(){setPayee("all",allBtn);};
+  el.appendChild(allBtn);
+  payees.forEach(function(p){
+    var btn=document.createElement("button");
+    btn.className="ftab"+(laborPayee===p?" on":"");
+    btn.textContent=p;
+    btn.onclick=function(){setPayee(p,btn);};
+    el.appendChild(btn);
+  });
+}
+
 function toggleLaborForm(){
   leid=null;
   ['lfid','lf-payee','lf-inv','lf-amt','lf-due','lf-phase','lf-notes','lf-pdate','lf-ref'].forEach(function(id){document.getElementById(id).value='';});
@@ -759,6 +792,7 @@ function getLaborList(){
   if(laborFilt==='expected') list=list.filter(function(i){return !i.paid&&!isOverdue(i);});
   if(laborFilt==='paid') list=list.filter(function(i){return i.paid;});
   if(laborFilt==='overdue') list=list.filter(function(i){return isOverdue(i);});
+  if(laborPayee!=="all") list=list.filter(function(i){return i.payee===laborPayee;});
   return list;
 }
 
