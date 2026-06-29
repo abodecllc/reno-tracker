@@ -364,7 +364,7 @@ textarea{resize:vertical;min-height:65px;line-height:1.5}
 <div class="toast" id="toast"></div>
 
 <script>
-var cfg = {key:'$2a$10$BcHZb5sGUiVEjALrjsBiSOBLoBhczrTKWVTGodXdWdU8UCwNlBqju', tid:'69ee31b8856a68218974eba8', name:'Owner'};
+var cfg = {key:'$2a$10$BcHZb5sGUiVEjALrjsBiSOBLoBhczrTKWVTGodXdWdU8UCwNlBqju', akey:'$2a$10$78pwL2sU4aNZiwbm1B3Ah.dy2KYu3AwV6YdVTs4pHRQumOBzK93IC', tid:'69ee31b8856a68218974eba8', name:'Owner'};
 var items = [];
 var laborItems = [];
 var matFilt = 'all', matCat = 'all';
@@ -431,7 +431,7 @@ function goApp(){
   document.getElementById('app-screen').classList.remove('hidden');
   document.getElementById('uname').textContent=cfg.name;
   fetchData();
-  syncInt=setInterval(fetchData,20000);
+  syncInt=setInterval(fetchData,300000);
 }
 
 // --- Sync ---
@@ -443,7 +443,7 @@ function setSync(s){
 async function fetchData(){
   setSync('spin');
   try {
-    var r=await fetch('https://api.jsonbin.io/v3/b/'+cfg.tid+'/latest',{headers:{'X-Master-Key':cfg.key}});
+    var r=await fetch('https://api.jsonbin.io/v3/b/'+cfg.tid+'/latest',{headers:{'X-Master-Key':cfg.key,'X-Access-Key':cfg.akey}});
     if(!r.ok) throw new Error();
     var d=await r.json();
     var h=JSON.stringify(d.record);
@@ -463,7 +463,7 @@ async function push(){
   try {
     var r=await fetch('https://api.jsonbin.io/v3/b/'+cfg.tid,{
       method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':cfg.key},
+      headers:{'Content-Type':'application/json','X-Master-Key':cfg.key,'X-Access-Key':cfg.akey},
       body:JSON.stringify({items:items,laborItems:laborItems})
     });
     if(!r.ok) throw new Error();
