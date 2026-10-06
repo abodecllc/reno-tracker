@@ -305,7 +305,7 @@ textarea{resize:vertical;min-height:65px;line-height:1.5}
     <!-- Milestone balance -->
     <div class="ms-section" id="ms-section">
       <div class="ms-header" onclick="toggleMilestones()">
-        <span>Draw schedule — milestone balance</span>
+        <span>Draw schedule — milestone balance <span style="font-size:11px;font-weight:400;color:#9E9A95;text-transform:none;letter-spacing:0">(Story Book Homes)</span></span>
         <span class="ms-chevron" id="ms-chevron">▲</span>
       </div>
       <div id="ms-body"></div>
@@ -983,9 +983,14 @@ function toggleMilestones(){
 }
 
 function renderMilestoneBalance(){
+  // Only GC invoices belong to the draw schedule
+  var gcItems = laborItems.filter(function(i){
+    return i.payee && i.payee.toLowerCase().indexOf('story book') > -1;
+  });
+
   // For each milestone, sum paid and expected labor invoices whose phase contains that milestone key (case-insensitive)
   var rows = MILESTONES.map(function(ms){
-    var matched = laborItems.filter(function(i){
+    var matched = gcItems.filter(function(i){
       if(!i.phase) return false;
       var p = i.phase.toLowerCase();
       return ms.keys.some(function(k){ return p.indexOf(k) > -1; });
@@ -997,10 +1002,10 @@ function renderMilestoneBalance(){
     return {label:ms.label, contracted:ms.contracted, invoiced:invoiced, paid:paid, remaining:remaining, pct:pct, matched:matched};
   });
 
-  // Also capture invoices that don't match any milestone
+  // Also capture GC invoices that don't match any milestone
   var matchedIds = [];
   MILESTONES.forEach(function(ms){
-    laborItems.forEach(function(i){
+    gcItems.forEach(function(i){
       if(!i.phase) return;
       var p = i.phase.toLowerCase();
       if(ms.keys.some(function(k){ return p.indexOf(k) > -1; })){
@@ -1008,7 +1013,7 @@ function renderMilestoneBalance(){
       }
     });
   });
-  var unmatched = laborItems.filter(function(i){return matchedIds.indexOf(i.id) === -1;});
+  var unmatched = gcItems.filter(function(i){return matchedIds.indexOf(i.id) === -1;});
   var unmatchedPaid = unmatched.filter(function(i){return i.paid;}).reduce(function(s,i){return s+i.amount;},0);
   var unmatchedTotal = unmatched.reduce(function(s,i){return s+i.amount;},0);
 
