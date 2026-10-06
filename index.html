@@ -994,7 +994,7 @@ function renderMilestoneBalance(){
     var invoiced = matched.reduce(function(s,i){return s+i.amount;},0);
     var remaining = Math.max(0, ms.contracted - paid);
     var pct = ms.contracted > 0 ? Math.min(100, Math.round(paid / ms.contracted * 100)) : 0;
-    return {label:ms.label, contracted:ms.contracted, invoiced:invoiced, paid:paid, remaining:remaining, pct:pct};
+    return {label:ms.label, contracted:ms.contracted, invoiced:invoiced, paid:paid, remaining:remaining, pct:pct, matched:matched};
   });
 
   // Also capture invoices that don't match any milestone
@@ -1027,8 +1027,18 @@ function renderMilestoneBalance(){
 
   rows.forEach(function(r){
     var remCls = r.remaining === 0 ? ' zero' : '';
+    // Build invoice chips: each matched invoice shown as a small pill with its number (or amount), colored by paid/expected
+    var chips = r.matched.map(function(i){
+      var lbl = i.invoiceNum ? esc(i.invoiceNum) : money(i.amount);
+      var color = i.paid ? 'background:#E8F2EC;color:#1A3D28' : (isOverdue(i) ? 'background:#FDECEA;color:#8B2020' : 'background:#F0EDE7;color:#6B6660');
+      var title = (i.invoiceNum||'') + (i.phase?' · '+i.phase:'') + ' · ' + money2(i.amount) + (i.paid?' · Paid':'');
+      return '<span title="'+esc(title)+'" style="display:inline-block;'+color+';font-size:11px;font-weight:500;padding:2px 7px;border-radius:10px;margin:1px 2px 1px 0;cursor:default">'+lbl+'</span>';
+    }).join('');
+    var invoiceCell = r.matched.length
+      ? '<div class="ms-cell name">'+esc(r.label)+'<div style="margin-top:4px;line-height:1.8">'+chips+'</div></div>'
+      : '<div class="ms-cell name" style="color:#9E9A95">'+esc(r.label)+'<div style="font-size:11px;margin-top:3px;font-style:italic">No invoices yet</div></div>';
     html += '<div class="ms-row">'
-      +'<div class="ms-cell name">'+esc(r.label)+'</div>'
+      +invoiceCell
       +'<div class="ms-cell contracted" style="text-align:right">'+money(r.contracted)+'</div>'
       +'<div class="ms-cell paid" style="text-align:right">'+money(r.paid)+'</div>'
       +'<div class="ms-cell remaining'+remCls+'" style="text-align:right">'+money(r.remaining)+'</div>'
@@ -1037,8 +1047,14 @@ function renderMilestoneBalance(){
   });
 
   if(unmatched.length > 0){
+    var uchips = unmatched.map(function(i){
+      var lbl = i.invoiceNum ? esc(i.invoiceNum) : money(i.amount);
+      var color = i.paid ? 'background:#E8F2EC;color:#1A3D28' : (isOverdue(i) ? 'background:#FDECEA;color:#8B2020' : 'background:#F0EDE7;color:#6B6660');
+      var title = (i.invoiceNum||'') + (i.phase?' · '+i.phase:'') + ' · ' + money2(i.amount) + (i.paid?' · Paid':'');
+      return '<span title="'+esc(title)+'" style="display:inline-block;'+color+';font-size:11px;font-weight:500;padding:2px 7px;border-radius:10px;margin:1px 2px 1px 0;cursor:default">'+lbl+'</span>';
+    }).join('');
     html += '<div class="ms-row" style="background:#FFFDF8">'
-      +'<div class="ms-cell name" style="color:#9E9A95;font-style:italic">Other / unassigned ('+unmatched.length+')</div>'
+      +'<div class="ms-cell name" style="color:#9E9A95;font-style:italic">Other / unassigned<div style="margin-top:4px;line-height:1.8">'+uchips+'</div></div>'
       +'<div class="ms-cell" style="text-align:right;color:#9E9A95">—</div>'
       +'<div class="ms-cell paid" style="text-align:right">'+money(unmatchedPaid)+'</div>'
       +'<div class="ms-cell" style="text-align:right;color:#9E9A95">—</div>'
