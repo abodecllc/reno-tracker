@@ -966,14 +966,14 @@ var msOpen = true;
 
 // Exhibit B draw schedule milestones (phase key must match invoice phase field, case-insensitive)
 var MILESTONES = [
-  {key:'Upon signing',          label:'Upon signing',                   contracted:80000},
-  {key:'Demo/permit',           label:'Demo, permit & start of work',   contracted:94780},
-  {key:'Framing',               label:'Framing of roof',                contracted:63607},
-  {key:'Rough-in',              label:'Rough-in electric/plumbing/HVAC',contracted:71085},
-  {key:'Sheetrock',             label:'Sheetrock',                      contracted:52129},
-  {key:'Trim and tile',         label:'Trim and tile',                  contracted:44651},
-  {key:'Final inspections',     label:'Final inspections',              contracted:41303},
-  {key:'Final acceptance',      label:'Final acceptance',               contracted:23695}
+  {keys:['upon signing','signing'],                        label:'Upon signing',                   contracted:80000},
+  {keys:['demo','permit','start of work','issuance'],      label:'Demo, permit & start of work',   contracted:94780},
+  {keys:['framing','roof'],                                label:'Framing of roof',                contracted:63607},
+  {keys:['rough-in','rough in','roughin','hvac'],          label:'Rough-in electric/plumbing/HVAC',contracted:71085},
+  {keys:['sheetrock','drywall'],                           label:'Sheetrock',                      contracted:52129},
+  {keys:['trim','tile'],                                   label:'Trim and tile',                  contracted:44651},
+  {keys:['final inspection','final insp'],                 label:'Final inspections',              contracted:41303},
+  {keys:['final acceptance','final accept','completion'],  label:'Final acceptance',               contracted:23695}
 ];
 
 function toggleMilestones(){
@@ -987,7 +987,8 @@ function renderMilestoneBalance(){
   var rows = MILESTONES.map(function(ms){
     var matched = laborItems.filter(function(i){
       if(!i.phase) return false;
-      return i.phase.toLowerCase().indexOf(ms.key.toLowerCase()) > -1;
+      var p = i.phase.toLowerCase();
+      return ms.keys.some(function(k){ return p.indexOf(k) > -1; });
     });
     var paid = matched.filter(function(i){return i.paid;}).reduce(function(s,i){return s+i.amount;},0);
     var invoiced = matched.reduce(function(s,i){return s+i.amount;},0);
@@ -1000,7 +1001,9 @@ function renderMilestoneBalance(){
   var matchedIds = [];
   MILESTONES.forEach(function(ms){
     laborItems.forEach(function(i){
-      if(i.phase && i.phase.toLowerCase().indexOf(ms.key.toLowerCase()) > -1){
+      if(!i.phase) return;
+      var p = i.phase.toLowerCase();
+      if(ms.keys.some(function(k){ return p.indexOf(k) > -1; })){
         matchedIds.push(i.id);
       }
     });
