@@ -360,6 +360,12 @@ textarea{resize:vertical;min-height:65px;line-height:1.5}
         <div><label>Category</label><select id="lf-cat"><option value="plumbing">Plumbing</option><option value="electrical">Electrical</option><option value="carpentry">Carpentry</option><option value="tile">Tile &amp; flooring</option><option value="painting">Painting</option><option value="general">General contractor</option><option value="design">Design / architecture</option><option value="other">Other</option></select></div>
       </div>
       <div class="fg full"><div><label>Notes</label><textarea id="lf-notes" placeholder="Payment terms, scope of work, contact info…"></textarea></div></div>
+      <div style="margin-top:10px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#6B6660;margin:0">
+          <input type="checkbox" id="lf-nodraw" style="width:auto;margin:0;cursor:pointer">
+          Exclude from draw schedule <span style="font-size:12px;color:#9E9A95">(e.g. materials procured by GC, not part of Exhibit B)</span>
+        </label>
+      </div>
       <div style="margin-top:12px;padding-top:12px;border-top:1px solid #E0DCD4">
         <div style="font-size:13px;font-weight:500;margin-bottom:8px;color:#6B6660">Mark as paid now? (leave blank if this is an expected future invoice)</div>
         <div class="fg three">
@@ -757,6 +763,7 @@ function toggleLaborForm(){
   ['lfid','lf-payee','lf-inv','lf-amt','lf-due','lf-phase','lf-notes','lf-pdate','lf-ref'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('lf-cat').value='plumbing';
   document.getElementById('lf-method').value='';
+  document.getElementById('lf-nodraw').checked=false;
   document.getElementById('lfh').textContent='Add invoice / payment';
   var f=document.getElementById('labor-form');
   f.classList.toggle('hidden');
@@ -779,6 +786,7 @@ function editLaborItem(id){
   document.getElementById('lf-pdate').value=item.paidDate||'';
   document.getElementById('lf-method').value=item.payMethod||'';
   document.getElementById('lf-ref').value=item.payRef||'';
+  document.getElementById('lf-nodraw').checked=!!item.excludeFromDraw;
   document.getElementById('lfh').textContent='Edit invoice';
   var f=document.getElementById('labor-form');
   f.classList.remove('hidden');
@@ -804,6 +812,7 @@ async function saveLaborItem(){
     paidDate:pdate||'',
     payMethod:method,
     payRef:document.getElementById('lf-ref').value.trim(),
+    excludeFromDraw:document.getElementById('lf-nodraw').checked,
     addedBy:cfg.name,
     addedAt:leid?(laborItems.find(function(i){return i.id===leid;})||{}).addedAt||Date.now():Date.now()
   };
@@ -860,6 +869,7 @@ function renderLabor(){
       var statusClass=item.paid?'b-paid':(overdue?'b-overdue':'b-expected');
       var statusLbl=item.paid?'Paid':(overdue?'Overdue':'Expected');
       var cardClass='lc'+(item.paid?' paid':'')+(overdue?' overdue':'');
+      var excludeBadge=item.excludeFromDraw?'<span class="badge" style="background:#EAF0FA;color:#1B4F8A" title="Not counted in draw schedule">Excl. draw schedule</span>':'';
       return '<div class="'+cardClass+'" id="lcard-'+item.id+'">'
         +'<div class="lc-top">'
           +'<div><div class="lc-payee">'+esc(item.payee)+(item.invoiceNum?'<span style="font-size:12px;font-weight:400;color:#9E9A95;margin-left:8px">'+esc(item.invoiceNum)+'</span>':'')+'</div>'
@@ -868,6 +878,7 @@ function renderLabor(){
           +'<div class="badges">'
             +'<span class="badge b-phase">'+laborCatLbl(item.category)+'</span>'
             +'<span class="badge '+statusClass+'">'+statusLbl+'</span>'
+            +excludeBadge
             +'<button class="btn btn-ghost btn-sm" onclick="delLaborItem(\''+item.id+'\')" style="padding:3px 7px;font-size:15px;line-height:1">×</button>'
           +'</div>'
         +'</div>'
@@ -983,9 +994,9 @@ function toggleMilestones(){
 }
 
 function renderMilestoneBalance(){
-  // Only GC invoices belong to the draw schedule
+  // Only GC invoices belong to the draw schedule; skip any explicitly excluded
   var gcItems = laborItems.filter(function(i){
-    return i.payee && i.payee.toLowerCase().indexOf('story book') > -1;
+    return i.payee && i.payee.toLowerCase().indexOf('story book') > -1 && !i.excludeFromDraw;
   });
 
   // For each milestone, sum paid and expected labor invoices whose phase contains that milestone key (case-insensitive)
