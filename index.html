@@ -145,6 +145,29 @@ textarea{resize:vertical;min-height:65px;line-height:1.5}
 .lpf-title{font-size:12px;font-weight:600;color:#7A4F08;margin-bottom:8px}
 .lpf .fg input,.lpf .fg select{background:#fff;border-color:#D4B483;font-size:13px;padding:7px 10px}
 
+/* Milestone balance */
+.ms-section{background:#fff;border:1px solid #E0DCD4;border-radius:12px;overflow:hidden;margin-bottom:1.25rem}
+.ms-header{font-size:13px;font-weight:600;padding:10px 14px;border-bottom:1px solid #E0DCD4;color:#6B6660;text-transform:uppercase;letter-spacing:0.05em;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.ms-header:hover{background:#F7F5F0}
+.ms-chevron{font-size:11px;transition:transform 0.2s;color:#9E9A95}
+.ms-body{padding:0}
+.ms-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 110px;gap:0;border-bottom:1px solid #F0EDE7;align-items:center}
+.ms-row:last-child{border-bottom:none}
+.ms-row.ms-total{background:#F7F5F0;font-weight:600}
+.ms-row.ms-head{background:#FAFAF8}
+.ms-cell{padding:9px 14px;font-size:13px;color:#1A1814}
+.ms-cell.lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#9E9A95;padding:7px 14px}
+.ms-cell.name{font-weight:500}
+.ms-cell.contracted{color:#7A4F08}
+.ms-cell.paid{color:#2D5A3D}
+.ms-cell.remaining{color:#1A1814}
+.ms-cell.remaining.zero{color:#9E9A95}
+.ms-pbar-wrap{padding:9px 14px}
+.ms-pbar{height:6px;background:#E0DCD4;border-radius:3px;overflow:hidden;min-width:60px}
+.ms-pbar-fill{height:100%;background:#2D5A3D;border-radius:3px;transition:width 0.4s}
+.ms-pbar-fill.full{background:#3DB865}
+@media(max-width:580px){.ms-row{grid-template-columns:1fr 1fr 1fr}.ms-cell.ms-progress,.ms-cell.lbl:nth-child(5){display:none}}
+
 /* Labor summary table */
 .l-summary{background:#fff;border:1px solid #E0DCD4;border-radius:12px;overflow:hidden;margin-bottom:1.25rem}
 .l-summary-title{font-size:13px;font-weight:600;padding:10px 14px;border-bottom:1px solid #E0DCD4;color:#6B6660;text-transform:uppercase;letter-spacing:0.05em}
@@ -277,6 +300,15 @@ textarea{resize:vertical;min-height:65px;line-height:1.5}
       <div class="stat green"><div class="stat-lbl">Paid to date</div><div class="stat-val" id="lt1">$0</div></div>
       <div class="stat"><div class="stat-lbl">Expected upcoming</div><div class="stat-val" id="lt2">$0</div></div>
       <div class="stat red"><div class="stat-lbl">Overdue</div><div class="stat-val" id="lt3">$0</div></div>
+    </div>
+
+    <!-- Milestone balance -->
+    <div class="ms-section" id="ms-section">
+      <div class="ms-header" onclick="toggleMilestones()">
+        <span>Draw schedule — milestone balance</span>
+        <span class="ms-chevron" id="ms-chevron">▲</span>
+      </div>
+      <div id="ms-body"></div>
     </div>
 
     <!-- Pay schedule summary -->
@@ -817,6 +849,7 @@ function getLaborList(){
 
 function renderLabor(){
   rebuildPayeeFilters();
+  renderMilestoneBalance();
   var list=getLaborList();
   var el=document.getElementById('labor-items');
   if(!list.length){
@@ -926,6 +959,100 @@ function updateSummary(){
   document.getElementById("cs-mat-rem").textContent=money(matRem);
   document.getElementById("cs-lab-rem").textContent=money(labRem);
   document.getElementById("cs-bar").style.width=pct+"%";
+}
+
+// --- Milestone balance ---
+var msOpen = true;
+
+// Exhibit B draw schedule milestones (phase key must match invoice phase field, case-insensitive)
+var MILESTONES = [
+  {key:'Upon signing',          label:'Upon signing',                   contracted:80000},
+  {key:'Demo/permit',           label:'Demo, permit & start of work',   contracted:94780},
+  {key:'Framing',               label:'Framing of roof',                contracted:63607},
+  {key:'Rough-in',              label:'Rough-in electric/plumbing/HVAC',contracted:71085},
+  {key:'Sheetrock',             label:'Sheetrock',                      contracted:52129},
+  {key:'Trim and tile',         label:'Trim and tile',                  contracted:44651},
+  {key:'Final inspections',     label:'Final inspections',              contracted:41303},
+  {key:'Final acceptance',      label:'Final acceptance',               contracted:23695}
+];
+
+function toggleMilestones(){
+  msOpen=!msOpen;
+  document.getElementById('ms-body').style.display=msOpen?'':'none';
+  document.getElementById('ms-chevron').style.transform=msOpen?'':'rotate(180deg)';
+}
+
+function renderMilestoneBalance(){
+  // For each milestone, sum paid and expected labor invoices whose phase contains that milestone key (case-insensitive)
+  var rows = MILESTONES.map(function(ms){
+    var matched = laborItems.filter(function(i){
+      if(!i.phase) return false;
+      return i.phase.toLowerCase().indexOf(ms.key.toLowerCase()) > -1;
+    });
+    var paid = matched.filter(function(i){return i.paid;}).reduce(function(s,i){return s+i.amount;},0);
+    var invoiced = matched.reduce(function(s,i){return s+i.amount;},0);
+    var remaining = Math.max(0, ms.contracted - paid);
+    var pct = ms.contracted > 0 ? Math.min(100, Math.round(paid / ms.contracted * 100)) : 0;
+    return {label:ms.label, contracted:ms.contracted, invoiced:invoiced, paid:paid, remaining:remaining, pct:pct};
+  });
+
+  // Also capture invoices that don't match any milestone
+  var matchedIds = [];
+  MILESTONES.forEach(function(ms){
+    laborItems.forEach(function(i){
+      if(i.phase && i.phase.toLowerCase().indexOf(ms.key.toLowerCase()) > -1){
+        matchedIds.push(i.id);
+      }
+    });
+  });
+  var unmatched = laborItems.filter(function(i){return matchedIds.indexOf(i.id) === -1;});
+  var unmatchedPaid = unmatched.filter(function(i){return i.paid;}).reduce(function(s,i){return s+i.amount;},0);
+  var unmatchedTotal = unmatched.reduce(function(s,i){return s+i.amount;},0);
+
+  var totalContracted = MILESTONES.reduce(function(s,m){return s+m.contracted;},0);
+  var totalPaid = rows.reduce(function(s,r){return s+r.paid;},0) + unmatchedPaid;
+  var totalRemaining = Math.max(0, totalContracted - totalPaid);
+  var totalPct = totalContracted > 0 ? Math.min(100, Math.round(totalPaid / totalContracted * 100)) : 0;
+
+  var html = '<div class="ms-row ms-head">'
+    +'<div class="ms-cell lbl">Milestone</div>'
+    +'<div class="ms-cell lbl" style="text-align:right">Contracted</div>'
+    +'<div class="ms-cell lbl" style="text-align:right">Paid</div>'
+    +'<div class="ms-cell lbl" style="text-align:right">Remaining</div>'
+    +'<div class="ms-cell lbl ms-progress">Progress</div>'
+  +'</div>';
+
+  rows.forEach(function(r){
+    var remCls = r.remaining === 0 ? ' zero' : '';
+    html += '<div class="ms-row">'
+      +'<div class="ms-cell name">'+esc(r.label)+'</div>'
+      +'<div class="ms-cell contracted" style="text-align:right">'+money(r.contracted)+'</div>'
+      +'<div class="ms-cell paid" style="text-align:right">'+money(r.paid)+'</div>'
+      +'<div class="ms-cell remaining'+remCls+'" style="text-align:right">'+money(r.remaining)+'</div>'
+      +'<div class="ms-pbar-wrap ms-progress"><div class="ms-pbar"><div class="ms-pbar-fill'+(r.pct>=100?' full':'')+'" style="width:'+r.pct+'%"></div></div><div style="font-size:10px;color:#9E9A95;margin-top:2px;text-align:right">'+r.pct+'%</div></div>'
+    +'</div>';
+  });
+
+  if(unmatched.length > 0){
+    html += '<div class="ms-row" style="background:#FFFDF8">'
+      +'<div class="ms-cell name" style="color:#9E9A95;font-style:italic">Other / unassigned ('+unmatched.length+')</div>'
+      +'<div class="ms-cell" style="text-align:right;color:#9E9A95">—</div>'
+      +'<div class="ms-cell paid" style="text-align:right">'+money(unmatchedPaid)+'</div>'
+      +'<div class="ms-cell" style="text-align:right;color:#9E9A95">—</div>'
+      +'<div class="ms-pbar-wrap ms-progress"></div>'
+    +'</div>';
+  }
+
+  html += '<div class="ms-row ms-total">'
+    +'<div class="ms-cell">Total (Exhibit B)</div>'
+    +'<div class="ms-cell" style="text-align:right">'+money(totalContracted)+'</div>'
+    +'<div class="ms-cell" style="text-align:right;color:#2D5A3D">'+money(totalPaid)+'</div>'
+    +'<div class="ms-cell" style="text-align:right">'+money(totalRemaining)+'</div>'
+    +'<div class="ms-pbar-wrap ms-progress"><div class="ms-pbar"><div class="ms-pbar-fill'+(totalPct>=100?' full':'')+'" style="width:'+totalPct+'%"></div></div><div style="font-size:10px;color:#9E9A95;margin-top:2px;text-align:right">'+totalPct+'%</div></div>'
+  +'</div>';
+
+  document.getElementById('ms-body').innerHTML = html;
+  document.getElementById('ms-body').style.display = msOpen ? '' : 'none';
 }
 
 // Boot - go straight to app
