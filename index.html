@@ -987,6 +987,15 @@ var MILESTONES = [
   {keys:['final acceptance','final accept','completion'],  label:'Final acceptance',               contracted:23695}
 ];
 
+// Change orders / credits that adjust the contract value. Positive = adds to contract, negative = credit.
+// keys: Story Book invoices whose phase contains a key are counted as paid toward that adjustment (leave empty for credits)
+var ADJUSTMENTS = [
+  {keys:['stair'], label:'Stairs adjustment',                   amount:3000,  note:'Change order'},
+  {keys:[],        label:'Town fine — Story Book covering',     amount:-2000, note:'Credit: owner paid fine, deducted from contract'}
+];
+
+function moneySigned(n){ return (n<0?'−':'')+money(Math.abs(n)); }
+
 function toggleMilestones(){
   msOpen=!msOpen;
   document.getElementById('ms-body').style.display=msOpen?'':'none';
@@ -1013,8 +1022,22 @@ function renderMilestoneBalance(){
     return {label:ms.label, contracted:ms.contracted, invoiced:invoiced, paid:paid, remaining:remaining, pct:pct, matched:matched};
   });
 
-  // Also capture GC invoices that don't match any milestone
+  // Contract adjustments (change orders and credits)
+  var adjRows = ADJUSTMENTS.map(function(a){
+    var matched = a.keys.length ? gcItems.filter(function(i){
+      if(!i.phase) return false;
+      var p = i.phase.toLowerCase();
+      return a.keys.some(function(k){ return p.indexOf(k) > -1; });
+    }) : [];
+    var paid = matched.filter(function(i){return i.paid;}).reduce(function(s,i){return s+i.amount;},0);
+    var remaining = a.amount < 0 ? a.amount : Math.max(0, a.amount - paid);
+    var pct = a.amount > 0 ? Math.min(100, Math.round(paid / a.amount * 100)) : null;
+    return {label:a.label, note:a.note, amount:a.amount, paid:paid, remaining:remaining, pct:pct, matched:matched};
+  });
+
+  // Also capture GC invoices that don't match any milestone or adjustment
   var matchedIds = [];
+  adjRows.forEach(function(r){ r.matched.forEach(function(i){ matchedIds.push(i.id); }); });
   MILESTONES.forEach(function(ms){
     gcItems.forEach(function(i){
       if(!i.phase) return;
@@ -1028,8 +1051,10 @@ function renderMilestoneBalance(){
   var unmatchedPaid = unmatched.filter(function(i){return i.paid;}).reduce(function(s,i){return s+i.amount;},0);
   var unmatchedTotal = unmatched.reduce(function(s,i){return s+i.amount;},0);
 
-  var totalContracted = MILESTONES.reduce(function(s,m){return s+m.contracted;},0);
-  var totalPaid = rows.reduce(function(s,r){return s+r.paid;},0) + unmatchedPaid;
+  var baseContracted = MILESTONES.reduce(function(s,m){return s+m.contracted;},0);
+  var adjTotal = ADJUSTMENTS.reduce(function(s,a){return s+a.amount;},0);
+  var totalContracted = baseContracted + adjTotal;
+  var totalPaid = rows.reduce(function(s,r){return s+r.paid;},0) + adjRows.reduce(function(s,r){return s+r.paid;},0) + unmatchedPaid;
   var totalRemaining = Math.max(0, totalContracted - totalPaid);
   var totalPct = totalContracted > 0 ? Math.min(100, Math.round(totalPaid / totalContracted * 100)) : 0;
 
@@ -1062,6 +1087,36 @@ function renderMilestoneBalance(){
     +'</div>';
   });
 
+  // Exhibit B subtotal, then contract adjustments
+  if(adjRows.length){
+    html += '<div class="ms-row" style="background:#F7F5F0">'
+      +'<div class="ms-cell" style="font-weight:600">Exhibit B subtotal</div>'
+      +'<div class="ms-cell" style="text-align:right;font-weight:600">'+money(baseContracted)+'</div>'
+      +'<div class="ms-cell"></div><div class="ms-cell"></div><div class="ms-pbar-wrap ms-progress"></div>'
+    +'</div>';
+    html += '<div style="font-size:11px;font-weight:600;color:#6B6660;text-transform:uppercase;letter-spacing:.04em;padding:10px 14px 4px">Contract adjustments</div>';
+    adjRows.forEach(function(r){
+      var isCredit = r.amount < 0;
+      var chips = r.matched.map(function(i){
+        var lbl = i.invoiceNum ? esc(i.invoiceNum) : money(i.amount);
+        var color = i.paid ? 'background:#E8F2EC;color:#1A3D28' : (isOverdue(i) ? 'background:#FDECEA;color:#8B2020' : 'background:#F0EDE7;color:#6B6660');
+        var title = (i.invoiceNum||'') + (i.phase?' · '+i.phase:'') + ' · ' + money2(i.amount) + (i.paid?' · Paid':'');
+        return '<span title="'+esc(title)+'" style="display:inline-block;'+color+';font-size:11px;font-weight:500;padding:2px 7px;border-radius:10px;margin:1px 2px 1px 0;cursor:default">'+lbl+'</span>';
+      }).join('');
+      var sub = chips ? '<div style="margin-top:4px;line-height:1.8">'+chips+'</div>'
+        : '<div style="font-size:11px;margin-top:3px;font-style:italic;color:#9E9A95">'+esc(r.note||'')+'</div>';
+      var amtColor = isCredit ? 'color:#8B2020' : '';
+      html += '<div class="ms-row">'
+        +'<div class="ms-cell name">'+(isCredit?'':'+ ')+esc(r.label)+sub+'</div>'
+        +'<div class="ms-cell" style="text-align:right;'+amtColor+'">'+(isCredit?'':'+')+moneySigned(r.amount)+'</div>'
+        +'<div class="ms-cell paid" style="text-align:right">'+(isCredit?'<span style="color:#9E9A95">—</span>':money(r.paid))+'</div>'
+        +'<div class="ms-cell remaining'+(r.remaining===0?' zero':'')+'" style="text-align:right;'+amtColor+'">'+moneySigned(r.remaining)+'</div>'
+        +(r.pct===null ? '<div class="ms-pbar-wrap ms-progress"><div style="font-size:10px;color:#9E9A95;text-align:right">credit</div></div>'
+          : '<div class="ms-pbar-wrap ms-progress"><div class="ms-pbar"><div class="ms-pbar-fill'+(r.pct>=100?' full':'')+'" style="width:'+r.pct+'%"></div></div><div style="font-size:10px;color:#9E9A95;margin-top:2px;text-align:right">'+r.pct+'%</div></div>')
+      +'</div>';
+    });
+  }
+
   if(unmatched.length > 0){
     var uchips = unmatched.map(function(i){
       var lbl = i.invoiceNum ? esc(i.invoiceNum) : money(i.amount);
@@ -1079,7 +1134,7 @@ function renderMilestoneBalance(){
   }
 
   html += '<div class="ms-row ms-total">'
-    +'<div class="ms-cell">Total (Exhibit B)</div>'
+    +'<div class="ms-cell">'+(adjRows.length?'Adjusted contract total':'Total (Exhibit B)')+'</div>'
     +'<div class="ms-cell" style="text-align:right">'+money(totalContracted)+'</div>'
     +'<div class="ms-cell" style="text-align:right;color:#2D5A3D">'+money(totalPaid)+'</div>'
     +'<div class="ms-cell" style="text-align:right">'+money(totalRemaining)+'</div>'
